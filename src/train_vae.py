@@ -6,6 +6,7 @@ from torchtext.data import TabularDataset, Iterator
 import logging
 import pickle
 from src.text_vae import TextVAE
+from src.constants import PAD_INDEX, SOS, EOS
 
 def train_vae(config):
 
@@ -15,7 +16,6 @@ def train_vae(config):
     logger = logging.getLogger(__name__)
 
     base_path = config['base_path']
-    coarse_path = os.path.join(base_path, 'coarse')
     save_path = os.path.join(base_path, 'vae.pkl')
     vocab_path = os.path.join(base_path, 'vocab.pkl')
     glove_source_path = config['glove_source_path']
@@ -24,11 +24,11 @@ def train_vae(config):
 
     logger.info('build dataset')
 
-    TEXT = data.Field(sequential=True, lower=True, batch_first=True)
+    TEXT = data.Field(sequential=True, lower=True, batch_first=True, init_token=SOS, eos_token=EOS)
     fields = [('sentence', TEXT)]
-    train_data = TabularDataset(path=os.path.join(coarse_path, 'train.tsv'),
+    train_data = TabularDataset(path=os.path.join(base_path, 'train.tsv'),
                                 format='tsv', skip_header=True, fields=fields)
-    dev_data = TabularDataset(path=os.path.join(coarse_path, 'dev.tsv'),
+    dev_data = TabularDataset(path=os.path.join(base_path, 'dev.tsv'),
                               format='tsv', skip_header=True, fields=fields)
 
     logger.info('load vocab')
@@ -48,7 +48,7 @@ def train_vae(config):
         vocab_size=vocab_size,
         embed_size=config['embed_size'],
         hidden_size=config['hidden_size'],
-        num_layers=config['num_layars'],
+        num_layers=config['num_layers'],
         dropout=config['dropout'],
         enc_dec_tying=config['enc_dec_tying'],
         dec_gen_tying=config['dec_gen_tying']
@@ -58,7 +58,7 @@ def train_vae(config):
     model = model.to(device)
 
     logger.info('set up criterion and optimizer')
-    criterion = nn.CrossEntropyLoss()
+    criterion = nn.CrossEntropyLoss(ignore_index=PAD_INDEX)
     optimizer = optim.Adam(model.parameters(), lr=config['lr'], weight_decay=config['weight_decay'])
 
     logger.info('start train')
@@ -67,8 +67,8 @@ def train_vae(config):
 
     for epoch in range(config['epoches']):
 
-        total_samples = 0
-        correct_samples = 0
+        total_tokens = 0
+        correct_tokens = 0
         total_loss = 0
 
         for i, batch in enumerate(train_iter):
@@ -80,10 +80,35 @@ def train_vae(config):
             src = sentence[:, 1:]
             trg_input = sentence
             batch_size = sentence.size(0)
-            pad = torch.zeros(size=(batch_size, 1))
-            trg_output = torch.cat((sentence[1:], pad), dim=-1)
+            pad = torch.zeros(size=(batch_size, 1), dtype=torch.long, device=device)
+            trg_output = torch.cat((sentence[:, 1:], pad), dim=-1)
 
             logit = model(src, trg_input)
+            trg_output = trg_output.view(-1)
+            output_size = logit.size(-1)
+            logit = logit.view(-1, output_size)
+            loss = criterion(logit, trg_output)
+            loss.backward()
+            nn.utils.clip_grad_norm_(model.parameters(), config['clip_grad_norm'])
+            optimizer.step()
+
+            mask = (trg_output != PAD_INDEX)
+            token_num = mask.long().sum().item()
+            total_tokens += token_num
+            total_loss += token_num * loss.item()
+            prediction = logit.argmax(dim=-1)
+            correct_tokens += (prediction.masked_select(mask) == trg_output.masked_select(mask)).long().sum().item()
+
+            if i % config['eval_freq'] == 0:
+                train_loss = total_loss / total_tokens
+                train_accuracy = correct_tokens / total_tokens
+                total_loss = 0
+                correct_tokens = 0
+                total_tokens = 0
+                logger.info('[epoch %2d step %4d]\ttrain_loss: %.4f\ttrain_accuracy: %.4f' %
+                            (epoch, i, train_loss, train_accuracy))
+
+        raise ValueError('debug')
             # loss = criterion(logit, label)
             # loss.backward()
             # optimizer.step()

@@ -14,13 +14,8 @@ class Encoder(nn.Module):
             hidden_size=hidden_size,
             num_layers=num_layers,
             bidirectional=True,
-            dropout=dropout if num_layers > 1 else None,
+            dropout=dropout if num_layers > 1 else 0,
             batch_first=True
-        )
-        self.mean_projection = nn.Linear(2 * hidden_size, hidden_size)
-        self.std_projection = nn.Sequential(
-            nn.Linear(2 * hidden_size, hidden_size),
-            nn.Softplus
         )
         self.dropout = dropout
 
@@ -38,7 +33,7 @@ class Encoder(nn.Module):
         # output = output.index_select(dim=0, index=reorder_index)
         final_states = final_states.index_select(dim=1, index=reorder_index)
         final_states = torch.cat(final_states.chunk(chunks=2, dim=0), dim=2)
-
+        return final_states
 
     def sample(self, mean, std):
         assert mean.size() == std.size()

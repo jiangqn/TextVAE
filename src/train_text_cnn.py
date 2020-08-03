@@ -17,7 +17,6 @@ def train_text_cnn(config):
     logger = logging.getLogger(__name__)
 
     base_path = config['base_path']
-    coarse_path = os.path.join(base_path, 'coarse')
     save_path = os.path.join(base_path, 'text_cnn.pkl')
     vocab_path = os.path.join(base_path, 'vocab.pkl')
     glove_source_path = config['glove_source_path']
@@ -33,9 +32,9 @@ def train_text_cnn(config):
         ('label', LABEL)
     ]
 
-    train_data = TabularDataset(path=os.path.join(coarse_path, 'train.tsv'),
+    train_data = TabularDataset(path=os.path.join(base_path, 'train.tsv'),
         format='tsv', skip_header=True, fields=fields)
-    dev_data = TabularDataset(path=os.path.join(coarse_path, 'dev.tsv'),
+    dev_data = TabularDataset(path=os.path.join(base_path, 'dev.tsv'),
         format='tsv', skip_header=True, fields=fields)
 
     logger.info('build vocabulary')

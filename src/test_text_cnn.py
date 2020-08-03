@@ -10,7 +10,6 @@ def test_text_cnn(config):
     os.environ['CUDA_VISIBLE_DEVICES'] = str(config['gpu'])
 
     base_path = config['base_path']
-    coarse_path = os.path.join(base_path, 'coarse')
     save_path = os.path.join(base_path, 'text_cnn.pkl')
     vocab_path = os.path.join(base_path, 'vocab.pkl')
 
@@ -23,7 +22,7 @@ def test_text_cnn(config):
         ('label', LABEL)
     ]
 
-    test_data = TabularDataset(path=os.path.join(coarse_path, 'test.tsv'),
+    test_data = TabularDataset(path=os.path.join(base_path, 'test.tsv'),
                                 format='tsv', skip_header=True, fields=fields)
     with open(vocab_path, 'rb') as handle:
         vocab = pickle.load(handle)
