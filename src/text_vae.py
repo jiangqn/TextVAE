@@ -8,6 +8,8 @@ class TextVAE(nn.Module):
 
     def __init__(self, vocab_size, embed_size, hidden_size, num_layers, dropout, enc_dec_tying, dec_gen_tying):
         super(TextVAE, self).__init__()
+        self.hidden_size = hidden_size
+        self.num_layers = num_layers
         self.encoder = Encoder(
             vocab_size=vocab_size,
             embed_size=embed_size,
@@ -39,3 +41,14 @@ class TextVAE(nn.Module):
         sample = torch.randn(size=mean.size(), device=mean.device)
         encoding = mean + std * sample
         return encoding, mean, std
+
+    def sample(self, **kwargs):
+        assert ('num' in kwargs) ^ ('encoding' in kwargs)
+        if 'num' in kwargs:
+            encoding = torch.randn(size=(self.num_layers, kwargs['num'], self.hidden_size),
+                                   device=self.encoder.embedding.weight.device)
+        else:
+            encoding = kwargs['encoding']
+        logit = self.decoder.decode(encoding, 20)
+        output = logit.argmax(dim=-1)
+        return output

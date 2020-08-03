@@ -41,7 +41,7 @@ class Decoder(nn.Module):
         return hidden, token_logit
 
     def decode(self, hidden, max_len):
-        batch_size = hidden.size(0)
+        batch_size = hidden.size(1)
         token = torch.tensor([SOS_INDEX] * batch_size, dtype=torch.long, device=hidden.device)
         logit = []
         for i in range(max_len):

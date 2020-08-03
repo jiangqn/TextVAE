@@ -11,6 +11,18 @@ text_cnn:
   weight_decay: 0
   epoches: 5
   eval_freq: 100
+language_model:
+  embed_size: 300
+  hidden_size: 300
+  num_layers: 2
+  dropout: 0.3
+  weight_tying: True
+  batch_size: 64
+  lr: 0.001
+  weight_decay: 0
+  epoches: 5
+  eval_freq: 100
+  clip_grad_norm: 5.0
 vae:
   embed_size: 300
   hidden_size: 300
