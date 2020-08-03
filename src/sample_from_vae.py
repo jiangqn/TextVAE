@@ -3,10 +3,14 @@ import torch
 from torchtext import data
 from torchtext.data import TabularDataset, Iterator
 import pickle
+import csv
 from src.constants import SOS, EOS
 from src.utils import convert_tensor_to_texts
 
 def sample_from_vae(config):
+
+    sample_num = int(input('sample num: '))
+    sample_save_path = input('save path: ')
 
     os.environ['CUDA_VISIBLE_DEVICES'] = str(config['gpu'])
 
@@ -18,7 +22,18 @@ def sample_from_vae(config):
         vocab = pickle.load(handle)
 
     model = torch.load(save_path)
-    output = model.sample(num=100)
-    texts = convert_tensor_to_texts(output, vocab)
-    for text in texts:
-        print(text)
+
+    batch_size = config['vae']['batch_size']
+    batch_sizes = [batch_size] * (sample_num // batch_size) + [sample_num % batch_size]
+
+    sentences = ['sentence']
+
+    for batch_size in batch_sizes:
+        output = model.sample(num=batch_size)
+        sentences.extend(convert_tensor_to_texts(output, vocab))
+
+    sentences = [[sentence] for sentence in sentences]
+
+    with open(sample_save_path, 'w') as f:
+        writer = csv.writer(f, delimiter='\t')
+        writer.writerows(sentences)

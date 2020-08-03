@@ -31,8 +31,9 @@ class TextVAE(nn.Module):
         self.std_projection = nn.Linear(2 * hidden_size, hidden_size)
 
     def forward(self, src, trg):
-        encoding, _, _ = self.encode(src)
-        return self.decoder(encoding, trg)
+        encoding, mean, std = self.encode(src)
+        logit = self.decoder(encoding, trg)
+        return logit, mean, std
 
     def encode(self, src):
         final_states = self.encoder(src)

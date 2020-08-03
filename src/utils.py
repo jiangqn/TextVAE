@@ -9,12 +9,10 @@ def sentence_clip(sentence):
 def convert_tensor_to_texts(tensor, vocab):
     f = lambda line: ' '.join([vocab.itos[index] for index in line])
     indices = tensor.tolist()
-    print(indices)
     texts = []
     for line in indices:
-        print(line)
-        eos_position = line.index(EOS_INDEX)
-        if eos_position != -1:
+        if EOS_INDEX in line:
+            eos_position = line.index(EOS_INDEX)
             line = line[0: eos_position]
         texts.append(f(line))
     return texts

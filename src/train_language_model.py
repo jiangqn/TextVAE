@@ -109,5 +109,5 @@ def train_language_model(config):
                     min_dev_loss = dev_loss
                     torch.save(model, save_path)
 
-    logger.info('dev_loss: %.4f\tdev_ppl: %.4f' % (dev_loss, math.exp(dev_loss)))
+    logger.info('dev_loss: %.4f\tdev_ppl: %.4f' % (min_dev_loss, math.exp(min_dev_loss)))
     logger.info('finish')

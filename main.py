@@ -14,7 +14,7 @@ config['gpu'] = args.gpu
 
 if args.model == 'vae':
     if args.task == 'train':
-        from src.train_vae import train_vae
+        from src.train_text_vae import train_vae
         train_vae(config)
     elif args.task == 'test':
         pass

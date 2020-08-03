@@ -5,14 +5,18 @@ from torchtext import data
 from torchtext.data import TabularDataset, Iterator
 import logging
 import pickle
+import math
 from src.text_vae import TextVAE
 from src.constants import PAD_INDEX, SOS, EOS
+from src.eval import eval_text_vae
+from src.gaussian_kldiv import GaussianKLDiv
 
 def train_vae(config):
 
     os.environ['CUDA_VISIBLE_DEVICES'] = str(config['gpu'])
 
-    logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(message)s', datefmt='%d-%b-%y %H:%M:%S')
+    logging.basicConfig(filename='vae.log', filemode='w',
+        level=logging.DEBUG, format='%(asctime)s - %(message)s', datefmt='%d-%b-%y %H:%M:%S')
     logger = logging.getLogger(__name__)
 
     base_path = config['base_path']
@@ -59,11 +63,13 @@ def train_vae(config):
 
     logger.info('set up criterion and optimizer')
     criterion = nn.CrossEntropyLoss(ignore_index=PAD_INDEX)
+    kldiv = GaussianKLDiv()
     optimizer = optim.Adam(model.parameters(), lr=config['lr'], weight_decay=config['weight_decay'])
 
     logger.info('start train')
 
     min_dev_loss = 1e9
+    corr_dev_wer = 1
 
     for epoch in range(config['epoches']):
 
@@ -80,14 +86,14 @@ def train_vae(config):
             src = sentence[:, 1:]
             trg_input = sentence
             batch_size = sentence.size(0)
-            pad = torch.zeros(size=(batch_size, 1), dtype=torch.long, device=device)
+            pad = torch.zeros(size=(batch_size, 1), dtype=torch.long, device=sentence.device)
             trg_output = torch.cat((sentence[:, 1:], pad), dim=-1)
 
-            logit = model(src, trg_input)
+            logit, mean, std = model(src, trg_input)
             trg_output = trg_output.view(-1)
             output_size = logit.size(-1)
             logit = logit.view(-1, output_size)
-            loss = criterion(logit, trg_output)
+            loss = criterion(logit, trg_output) + kldiv(mean, std) * config['lambd']
             loss.backward()
             nn.utils.clip_grad_norm_(model.parameters(), config['clip_grad_norm'])
             optimizer.step()
@@ -101,38 +107,17 @@ def train_vae(config):
 
             if i % config['eval_freq'] == 0:
                 train_loss = total_loss / total_tokens
-                train_accuracy = correct_tokens / total_tokens
+                train_wer = 1 - correct_tokens / total_tokens
                 total_loss = 0
                 correct_tokens = 0
                 total_tokens = 0
-                logger.info('[epoch %2d step %4d]\ttrain_loss: %.4f\ttrain_accuracy: %.4f' %
-                            (epoch, i, train_loss, train_accuracy))
-        torch.save(model, save_path)
-        raise ValueError('debug')
-            # loss = criterion(logit, label)
-            # loss.backward()
-            # optimizer.step()
-            #
-            # batch_size = label.size(0)
-            # prediction = logit.argmax(dim=-1)
-            # total_samples += batch_size
-            # correct_samples += (prediction == label).long().sum().item()
-            # total_loss += batch_size * loss.item()
+                dev_loss, dev_wer = eval_text_vae(model, dev_iter, criterion)
+                logger.info('[epoch %2d step %4d]\ttrain_ppl: %.4f train_wer: %.4f dev_ppl: %.4f dev_wer: %.4f' %
+                            (epoch, i, math.exp(train_loss), train_wer, math.exp(dev_loss), dev_wer))
+                if dev_loss < min_dev_loss:
+                    min_dev_loss = dev_loss
+                    corr_dev_wer = dev_wer
+                    torch.save(model, save_path)
 
-            # if i % config['eval_freq'] == 0:
-            #
-            #     train_loss = total_loss / total_samples
-            #     train_accuracy = correct_samples / total_samples
-            #     total_samples = 0
-            #     total_loss = 0
-            #     correct_samples = 0
-            #
-            #     dev_loss, dev_accuracy = eval_text_cnn(model, dev_iter, criterion)
-            #
-            #     logger.info('[epoch %2d step %4d]\ttrain_loss: %.4f\ttrain_accuracy: %.4f\tdev_loss: %.4f\tdev_accuracy: %.4f' %
-            #                 (epoch, i, train_loss, train_accuracy, dev_loss, dev_accuracy))
-            #
-            #     if dev_loss < min_dev_loss:
-            #         min_dev_loss = dev_loss
-            #         corr_dev_accuracy = dev_accuracy
-            #         torch.save(model, save_path)
+    logger.info('dev_ppl: %.4f\tdev_wer: %.4f' % (math.exp(min_dev_loss), corr_dev_wer))
+    logger.info('finish')
