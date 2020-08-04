@@ -1,8 +1,8 @@
 import torch
 from torch import nn
 import torch.nn.functional as F
-from src.encoder import Encoder
-from src.decoder import Decoder
+from src.model.encoder import Encoder
+from src.model.decoder import Decoder
 
 class TextVAE(nn.Module):
 

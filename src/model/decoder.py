@@ -1,6 +1,6 @@
 import torch
 from torch import nn
-from src.multi_layer_gru_cell import MultiLayerGRUCell
+from src.model.multi_layer_gru_cell import MultiLayerGRUCell
 from src.constants import SOS_INDEX
 
 class Decoder(nn.Module):

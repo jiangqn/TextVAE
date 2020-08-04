@@ -5,15 +5,16 @@ from torchtext.data import TabularDataset, Iterator
 import os
 import logging
 import pickle
-from src.text_cnn import TextCNN
-from src.eval import eval_text_cnn
+from src.model.text_cnn import TextCNN
+from src.train.eval import eval_text_cnn
 from src.constants import PAD, UNK, SOS, EOS
 
 def train_text_cnn(config):
 
     os.environ['CUDA_VISIBLE_DEVICES'] = str(config['gpu'])
 
-    logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(message)s', datefmt='%d-%b-%y %H:%M:%S')
+    logging.basicConfig(filename='text_cnn.log', filemode='w',
+        level=logging.DEBUG, format='%(asctime)s - %(message)s', datefmt='%d-%b-%y %H:%M:%S')
     logger = logging.getLogger(__name__)
 
     base_path = config['base_path']

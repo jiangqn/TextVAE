@@ -14,7 +14,7 @@ config['gpu'] = args.gpu
 
 if args.model == 'vae':
     if args.task == 'train':
-        from src.train_text_vae import train_vae
+        from src.train.train_text_vae import train_vae
         train_vae(config)
     elif args.task == 'test':
         pass
@@ -23,15 +23,15 @@ if args.model == 'vae':
         sample_from_vae(config)
 elif args.model == 'lm':
     if args.task == 'train':
-        from src.train_language_model import train_language_model
+        from src.train.train_language_model import train_language_model
         train_language_model(config)
     elif args.task == 'test':
-        from src.test_language_model import test_language_model
+        from src.train.test_language_model import test_language_model
         test_language_model(config)
 else:   # text_cnn
     if args.task == 'train':
-        from src.train_text_cnn import train_text_cnn
+        from src.train.train_text_cnn import train_text_cnn
         train_text_cnn(config)
     elif args.task == 'test':
-        from src.test_text_cnn import test_text_cnn
+        from src.train.test_text_cnn import test_text_cnn
         test_text_cnn(config)

@@ -4,7 +4,7 @@ text_cnn:
   embed_size: 300
   kernel_sizes: [3, 4, 5]
   kernel_num: 100
-  dropout: 0.3
+  dropout: 0.5
   num_categories: 2
   batch_size: 64
   lr: 0.001
@@ -13,10 +13,10 @@ text_cnn:
   eval_freq: 100
 language_model:
   embed_size: 300
-  hidden_size: 300
+  hidden_size: 600
   num_layers: 2
   dropout: 0.3
-  weight_tying: True
+  weight_tying: False
   batch_size: 64
   lr: 0.001
   weight_decay: 0
