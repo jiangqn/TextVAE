@@ -2,6 +2,7 @@ import os
 import torch
 from torchtext import data
 from torchtext.data import TabularDataset, Iterator
+import numpy as np
 import pickle
 import csv
 from src.constants import SOS, EOS
@@ -11,6 +12,7 @@ def sample_from_vae(config):
 
     sample_num = int(input('sample num: '))
     sample_save_path = input('save path: ')
+    save_encoding = input('save_encoding: ') == 'True'
 
     os.environ['CUDA_VISIBLE_DEVICES'] = str(config['gpu'])
 
@@ -28,11 +30,22 @@ def sample_from_vae(config):
 
     sentences = ['sentence']
 
+    if save_encoding:
+        encoding = []
+
     for batch_size in batch_sizes:
-        output = model.sample(num=batch_size)
+        if save_encoding:
+            output, output_encoding = model.sample(num=batch_size, output_encoding=True)
+            encoding.append(output_encoding)
+        else:
+            output = model.sample(num=batch_size)
         sentences.extend(convert_tensor_to_texts(output, vocab))
 
     sentences = [[sentence] for sentence in sentences]
+    if save_encoding:
+        encoding = np.concatenate(encoding, axis=0)
+        encoding_save_path = '.'.join(sample_save_path.split('.')[0:-1]) + '.npy'
+        np.save(encoding_save_path, encoding)
 
     with open(sample_save_path, 'w') as f:
         writer = csv.writer(f, delimiter='\t')

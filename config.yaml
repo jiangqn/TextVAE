@@ -13,7 +13,7 @@ text_cnn:
   eval_freq: 100
 language_model:
   embed_size: 300
-  hidden_size: 600
+  hidden_size: 300
   num_layers: 2
   dropout: 0.3
   weight_tying: False

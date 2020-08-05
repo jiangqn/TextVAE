@@ -52,4 +52,9 @@ class TextVAE(nn.Module):
             encoding = kwargs['encoding']
         logit = self.decoder.decode(encoding, 20)
         output = logit.argmax(dim=-1)
-        return output
+        if 'output_encoding' in kwargs and kwargs['output_encoding']:
+            num = encoding.size(1)
+            encoding = encoding.transpose(0, 1).reshape(num, -1).cpu().numpy()
+            return output, encoding
+        else:
+            return output
