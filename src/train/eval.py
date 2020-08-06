@@ -1,5 +1,6 @@
 import torch
 from src.constants import PAD_INDEX
+from src.train.sample_eval import sample_eval
 
 def eval_text_cnn(model, data_iter, criterion=None):
 
@@ -96,4 +97,5 @@ def eval_text_vae(model, data_iter, criterion):
 
     loss = total_loss / total_tokens
     wer = 1 - correct_tokens / total_tokens
-    return loss, wer
+    sample_ppl = sample_eval(model)
+    return loss, wer, sample_ppl

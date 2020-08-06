@@ -10,13 +10,13 @@ from src.model.text_vae import TextVAE
 from src.constants import PAD_INDEX, SOS, EOS
 from src.train.eval import eval_text_vae
 from src.gaussian_kldiv import GaussianKLDiv
+from src.train.sample_eval import sample_eval
 
 def train_vae(config):
 
     os.environ['CUDA_VISIBLE_DEVICES'] = str(config['gpu'])
 
-    logging.basicConfig(filename='vae.log', filemode='w',
-        level=logging.DEBUG, format='%(asctime)s - %(message)s', datefmt='%d-%b-%y %H:%M:%S')
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s', datefmt='%d-%b-%y %H:%M:%S')
     logger = logging.getLogger(__name__)
 
     base_path = config['base_path']
@@ -111,9 +111,10 @@ def train_vae(config):
                 total_loss = 0
                 correct_tokens = 0
                 total_tokens = 0
-                dev_loss, dev_wer = eval_text_vae(model, dev_iter, criterion)
-                logger.info('[epoch %2d step %4d]\ttrain_ppl: %.4f train_wer: %.4f dev_ppl: %.4f dev_wer: %.4f' %
-                            (epoch, i, math.exp(train_loss), train_wer, math.exp(dev_loss), dev_wer))
+                dev_loss, dev_wer, sample_ppl = eval_text_vae(model, dev_iter, criterion)
+                logger.info('[epoch %2d step %4d]\ttrain_ppl: %.4f train_wer: %.4f dev_ppl: %.4f dev_wer: %.4f sample_ppl: %.4f' %
+                            (epoch, i, math.exp(train_loss), train_wer, math.exp(dev_loss), dev_wer, sample_ppl))
+                sample_eval(model)
                 if dev_loss < min_dev_loss:
                     min_dev_loss = dev_loss
                     corr_dev_wer = dev_wer

@@ -17,7 +17,8 @@ if args.model == 'vae':
         from src.train.train_text_vae import train_vae
         train_vae(config)
     elif args.task == 'test':
-        pass
+        from src.train.test_text_vae import test_vae
+        test_vae(config)
     elif args.task == 'sample':   # sample
         from src.sample_from_vae import sample_from_vae
         sample_from_vae(config)
