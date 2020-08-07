@@ -10,9 +10,12 @@ from src.utils import convert_tensor_to_texts
 
 def sample_from_vae(config):
 
-    sample_num = int(input('sample num: '))
-    sample_save_path = input('save path: ')
-    save_encoding = input('save_encoding: ') == 'True'
+    # sample_num = int(input('sample num: '))
+    sample_num = 10000
+    # sample_save_path = input('save path: ')
+    sample_save_path = 'data/sample10000.tsv'
+    # save_encoding = input('save_encoding: ') == 'True'
+    save_encoding = True
 
     os.environ['CUDA_VISIBLE_DEVICES'] = str(config['gpu'])
 

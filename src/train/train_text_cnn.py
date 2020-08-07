@@ -5,21 +5,23 @@ from torchtext.data import TabularDataset, Iterator
 import os
 import logging
 import pickle
+import numpy as np
 from src.model.text_cnn import TextCNN
 from src.train.eval import eval_text_cnn
 from src.constants import PAD, UNK, SOS, EOS
+from src.utils import load_glove
 
 def train_text_cnn(config):
 
     os.environ['CUDA_VISIBLE_DEVICES'] = str(config['gpu'])
 
-    logging.basicConfig(filename='text_cnn.log', filemode='w',
-        level=logging.DEBUG, format='%(asctime)s - %(message)s', datefmt='%d-%b-%y %H:%M:%S')
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s', datefmt='%d-%b-%y %H:%M:%S')
     logger = logging.getLogger(__name__)
 
     base_path = config['base_path']
     save_path = os.path.join(base_path, 'text_cnn.pkl')
     vocab_path = os.path.join(base_path, 'vocab.pkl')
+    embedding_path = os.path.join(base_path, 'embedding.npy')
     glove_source_path = config['glove_source_path']
 
     config = config['text_cnn']
@@ -46,6 +48,12 @@ def train_text_cnn(config):
     logger.info('save vocabulary')
     with open(vocab_path, 'wb') as handle:
         pickle.dump(vocab, handle)
+    logger.info('load pretrained embedding')
+    if os.path.isfile(embedding_path):
+        embedding = np.load(embedding_path)
+    else:
+        embedding = load_glove(glove_source_path, vocab_size, vocab.stoi)
+        np.save(embedding_path, embedding)
 
     logger.info('build data iterator')
     device = torch.device('cuda:0')
@@ -61,6 +69,7 @@ def train_text_cnn(config):
         dropout=config['dropout'],
         num_categories=config['num_categories']
     )
+    model.embedding.weight.data.copy_(torch.tensor(embedding))
     logger.info('transfer model to GPU')
     model = model.to(device)
 

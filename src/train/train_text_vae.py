@@ -6,6 +6,7 @@ from torchtext.data import TabularDataset, Iterator
 import logging
 import pickle
 import math
+import numpy as np
 from src.model.text_vae import TextVAE
 from src.constants import PAD_INDEX, SOS, EOS
 from src.train.eval import eval_text_vae
@@ -22,6 +23,7 @@ def train_vae(config):
     base_path = config['base_path']
     save_path = os.path.join(base_path, 'vae.pkl')
     vocab_path = os.path.join(base_path, 'vocab.pkl')
+    embedding_path = os.path.join(base_path, 'embedding.npy')
     glove_source_path = config['glove_source_path']
 
     config = config['vae']
@@ -41,6 +43,8 @@ def train_vae(config):
     TEXT.vocab = vocab
     vocab_size = len(vocab.itos)
     logger.info('vocab_size: %d' % vocab_size)
+    logger.info('load pretrained embedding')
+    embedding = np.load(embedding_path)
 
     logger.info('build data iterator')
     device = torch.device('cuda:0')
@@ -57,6 +61,8 @@ def train_vae(config):
         enc_dec_tying=config['enc_dec_tying'],
         dec_gen_tying=config['dec_gen_tying']
     )
+    # model.encoder.embedding.weight.data.copy_(torch.tensor(embedding))
+    # model.decoder.embedding.weight.data.copy_(torch.tensor(embedding))
 
     logger.info('transfer model to GPU')
     model = model.to(device)

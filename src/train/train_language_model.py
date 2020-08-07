@@ -6,6 +6,7 @@ from torchtext.data import TabularDataset, Iterator
 import logging
 import pickle
 import math
+import numpy as np
 from src.model.language_model import LanguageModel
 from src.constants import PAD_INDEX, SOS, EOS
 from src.train.eval import eval_language_model
@@ -21,6 +22,7 @@ def train_language_model(config):
     base_path = config['base_path']
     save_path = os.path.join(base_path, 'language_model.pkl')
     vocab_path = os.path.join(base_path, 'vocab.pkl')
+    embedding_path = os.path.join(base_path, 'embedding.npy')
     glove_source_path = config['glove_source_path']
 
     config = config['language_model']
@@ -40,6 +42,8 @@ def train_language_model(config):
     TEXT.vocab = vocab
     vocab_size = len(vocab.itos)
     logger.info('vocab_size: %d' % vocab_size)
+    logger.info('load pretrained embedding')
+    embedding = np.load(embedding_path)
 
     logger.info('build data iterator')
     device = torch.device('cuda:0')
@@ -55,6 +59,7 @@ def train_language_model(config):
         dropout=config['dropout'],
         weight_tying=config['weight_tying']
     )
+    model.embedding.weight.data.copy_(torch.tensor(embedding))
 
     logger.info('transfer model to GPU')
     model = model.to(device)

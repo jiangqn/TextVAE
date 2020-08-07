@@ -5,7 +5,8 @@ from src.train.predict_language_model import predict_language_model
 
 def predict(config):
 
-    sample_save_path = input('save path: ')
+    # sample_save_path = input('save path: ')
+    sample_save_path = 'data/sample10000.tsv'
     # encoding_save_path = '.'.join(sample_save_path.split('.')[0:-1]) + '.npy'
 
     os.environ['CUDA_VISIBLE_DEVICES'] = str(config['gpu'])

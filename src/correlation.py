@@ -4,8 +4,8 @@ from sklearn.cross_decomposition import CCA
 
 def correlation(config):
 
-    sample_save_path = input('save path: ')
-    # sample_save_path = 'data/sample10000.tsv'
+    # sample_save_path = input('save path: ')
+    sample_save_path = 'data/sample10000.tsv'
     encoding_save_path = '.'.join(sample_save_path.split('.')[0:-1]) + '.npy'
 
     encoding = np.load(encoding_save_path)
