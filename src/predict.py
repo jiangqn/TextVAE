@@ -20,7 +20,10 @@ def predict(config):
 
     df = pd.read_csv(sample_save_path, delimiter='\t')
     length = [len(sentence.split()) for sentence in list(df.loc[:, 'sentence'])]
+    from src.sentence_depth import sentence_depth
+    depth = [sentence_depth(sentence) for sentence in list(df.loc[:, 'sentence'])]
     df['sentiment'] = sentiment
     df['ppl'] = ppl
     df['length'] = length
+    df['depth'] = depth
     df.to_csv(sample_save_path, sep='\t')
