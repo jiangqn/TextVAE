@@ -16,7 +16,7 @@ class Decoder(nn.Module):
         )
         self.output_projection = nn.Sequential(
             nn.Linear(hidden_size, hidden_size),
-            nn.Tanh(),
+            nn.ReLU(),
             nn.Linear(hidden_size, embed_size)
         )
         self.generator = nn.Linear(embed_size, vocab_size)

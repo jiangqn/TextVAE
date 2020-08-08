@@ -47,7 +47,7 @@ def visualize(config):
 
     base_path = config['base_path']
 
-    sample_save_path = 'data/sample10000.tsv'
+    sample_save_path = os.path.join(base_path, 'sample10000.tsv')
     encoding_save_path = '.'.join(sample_save_path.split('.')[0:-1]) + '.npy'
 
     encoding = np.load(encoding_save_path)
@@ -81,7 +81,7 @@ def visualize(config):
         x = encoding.dot(v)[:, 0] * sign
         y = encoding.dot(u)[:, 0]
 
-        plt.scatter(x, y, c=prop)
+        plt.scatter(x, y, c=prop, s=0.1)
         plt.colorbar()
         plt.title('%s (correlation: %.4f)' % (prop_name, abs(corr)))
 

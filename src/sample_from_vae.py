@@ -10,16 +10,17 @@ from src.utils import convert_tensor_to_texts
 
 def sample_from_vae(config):
 
+    base_path = config['base_path']
+
     # sample_num = int(input('sample num: '))
     sample_num = 10000
     # sample_save_path = input('save path: ')
-    sample_save_path = 'data/sample10000.tsv'
+    sample_save_path = os.path.join(base_path, 'sample10000.tsv')
     # save_encoding = input('save_encoding: ') == 'True'
     save_encoding = True
 
     os.environ['CUDA_VISIBLE_DEVICES'] = str(config['gpu'])
 
-    base_path = config['base_path']
     save_path = os.path.join(base_path, 'vae.pkl')
     vocab_path = os.path.join(base_path, 'vocab.pkl')
 

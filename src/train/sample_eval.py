@@ -24,8 +24,8 @@ def sample_eval(model, sample_num=1000, batch_size=64):
 
     sentences = [[sentence] for sentence in sentences]
 
-    for i in range(1, 6):
-        print(sentences[i][0])
+    # for i in range(1, 6):
+    #     print(sentences[i][0])
 
     with open(sample_save_path, 'w') as f:
         writer = csv.writer(f, delimiter='\t')

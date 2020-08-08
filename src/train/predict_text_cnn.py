@@ -26,7 +26,10 @@ def predict_text_cnn(model_path, file_path, vocab_path, batch_size=64):
         for batch in test_iter:
             sentence = batch.sentence
             logit = model(sentence)
-            prob = torch.softmax(logit, dim=-1)[:, 1].tolist()
+            num_categories = logit.size(1)
+            scores = torch.arange(num_categories, dtype=torch.float, device=logit.device).unsqueeze(-1)
+            prob = torch.softmax(logit, dim=-1).matmul(scores)[:, 0].tolist()
+            # prob = logit.argmax(dim=-1).tolist()
             sentiments.extend(prob)
 
     return sentiments

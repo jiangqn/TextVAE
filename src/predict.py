@@ -5,13 +5,14 @@ from src.train.predict_language_model import predict_language_model
 
 def predict(config):
 
+    base_path = config['base_path']
+
     # sample_save_path = input('save path: ')
-    sample_save_path = 'data/sample10000.tsv'
+    sample_save_path = os.path.join(base_path, 'sample10000.tsv')
     # encoding_save_path = '.'.join(sample_save_path.split('.')[0:-1]) + '.npy'
 
     os.environ['CUDA_VISIBLE_DEVICES'] = str(config['gpu'])
 
-    base_path = config['base_path']
     vocab_path = os.path.join(base_path, 'vocab.pkl')
     text_cnn_path = os.path.join(base_path, 'text_cnn.pkl')
     language_model_path = os.path.join(base_path, 'language_model.pkl')
