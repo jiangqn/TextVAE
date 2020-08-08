@@ -77,6 +77,8 @@ def train_vae(config):
     min_dev_loss = 1e9
     corr_dev_wer = 1
 
+    global_step = 0 # min(globel_step, config['anneal_step']) / config['anneal_step']
+
     for epoch in range(config['epoches']):
 
         total_tokens = 0
@@ -99,10 +101,11 @@ def train_vae(config):
             trg_output = trg_output.view(-1)
             output_size = logit.size(-1)
             logit = logit.view(-1, output_size)
-            loss = criterion(logit, trg_output) + kldiv(mean, std) * config['lambd']
+            loss = criterion(logit, trg_output) + kldiv(mean, std) * config['lambd'] * min(global_step, config['anneal_step']) / config['anneal_step']
             loss.backward()
             nn.utils.clip_grad_norm_(model.parameters(), config['clip_grad_norm'])
             optimizer.step()
+            global_step += 1
 
             mask = (trg_output != PAD_INDEX)
             token_num = mask.long().sum().item()

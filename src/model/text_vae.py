@@ -1,8 +1,10 @@
 import torch
 from torch import nn
 import torch.nn.functional as F
+from torch.nn.init import constant_
 from src.model.encoder import Encoder
 from src.model.decoder import Decoder
+from src.constants import PAD_INDEX, UNK_INDEX
 
 class TextVAE(nn.Module):
 
@@ -32,8 +34,17 @@ class TextVAE(nn.Module):
 
     def forward(self, src, trg):
         encoding, mean, std = self.encode(src)
+        trg = self.word_dropout(trg)
         logit = self.decoder(encoding, trg)
         return logit, mean, std
+
+    def word_dropout(self, trg):
+        mask = (trg == PAD_INDEX)
+        p = torch.FloatTensor(mask.size()).to(trg.device)
+        constant_(p, 0.5)
+        p.masked_fill_(mask, 1)
+        mask = torch.bernoulli(p).long()
+        return mask * trg
 
     def encode(self, src):
         final_states = self.encoder(src)
