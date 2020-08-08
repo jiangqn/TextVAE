@@ -8,6 +8,7 @@ import pickle
 import math
 import numpy as np
 from src.model.text_vae import TextVAE
+from src.model.lstm_vae import LSTM_VAE
 from src.constants import PAD_INDEX, SOS, EOS
 from src.train.eval import eval_text_vae
 from src.gaussian_kldiv import GaussianKLDiv
@@ -52,7 +53,7 @@ def train_vae(config):
     dev_iter = Iterator(dev_data, batch_size=config['batch_size'], shuffle=False, device=device)
 
     logger.info('build model')
-    model = TextVAE(
+    model = LSTM_VAE(
         vocab_size=vocab_size,
         embed_size=config['embed_size'],
         hidden_size=config['hidden_size'],

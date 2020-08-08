@@ -9,7 +9,7 @@ class Encoder(nn.Module):
     def __init__(self, vocab_size, embed_size, hidden_size, num_layers, dropout):
         super(Encoder, self).__init__()
         self.embedding = nn.Embedding(num_embeddings=vocab_size, embedding_dim=embed_size)
-        self.rnn = nn.GRU(
+        self.rnn = nn.LSTM(
             input_size=embed_size,
             hidden_size=hidden_size,
             num_layers=num_layers,
@@ -27,10 +27,10 @@ class Encoder(nn.Module):
         src_lens, sort_index = src_lens.sort(descending=True)
         src = src.index_select(dim=0, index=sort_index)
         packed_src = pack_padded_sequence(src, src_lens, batch_first=True)
-        packed_output, final_states = self.rnn(packed_src)
+        packed_output, (hidden_states, cell_states) = self.rnn(packed_src)
         # output, _ = pad_packed_sequence(packed_output, batch_first=True)
         reorder_index = sort_index.argsort(descending=False)
         # output = output.index_select(dim=0, index=reorder_index)
-        final_states = final_states.index_select(dim=1, index=reorder_index)
-        final_states = torch.cat(final_states.chunk(chunks=2, dim=0), dim=2)
-        return final_states
+        hidden_states = hidden_states.index_select(dim=1, index=reorder_index)
+        hidden_states = torch.cat(hidden_states.chunk(chunks=2, dim=0), dim=2)
+        return hidden_states
