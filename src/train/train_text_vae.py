@@ -53,7 +53,7 @@ def train_vae(config):
     dev_iter = Iterator(dev_data, batch_size=config['batch_size'], shuffle=False, device=device)
 
     logger.info('build model')
-    model = LSTM_VAE(
+    model = TextVAE(
         vocab_size=vocab_size,
         embed_size=config['embed_size'],
         hidden_size=config['hidden_size'],
@@ -85,6 +85,8 @@ def train_vae(config):
         total_tokens = 0
         correct_tokens = 0
         total_loss = 0
+        total_ce_loss = 0
+        total_kl_loss = 0
 
         for i, batch in enumerate(train_iter):
 
@@ -102,7 +104,9 @@ def train_vae(config):
             trg_output = trg_output.view(-1)
             output_size = logit.size(-1)
             logit = logit.view(-1, output_size)
-            loss = criterion(logit, trg_output) + kldiv(mean, std) * config['lambd'] * min(global_step, config['anneal_step']) / config['anneal_step']
+            ce_loss = criterion(logit, trg_output)
+            kl_loss = kldiv(mean, std)
+            loss = ce_loss + kl_loss * config['lambd'] * min(global_step, config['anneal_step']) / config['anneal_step']
             loss.backward()
             nn.utils.clip_grad_norm_(model.parameters(), config['clip_grad_norm'])
             optimizer.step()
@@ -112,6 +116,8 @@ def train_vae(config):
             token_num = mask.long().sum().item()
             total_tokens += token_num
             total_loss += token_num * loss.item()
+            total_ce_loss += token_num * ce_loss.item()
+            total_kl_loss += token_num * kl_loss.item()
             prediction = logit.argmax(dim=-1)
             correct_tokens += (prediction.masked_select(mask) == trg_output.masked_select(mask)).long().sum().item()
 

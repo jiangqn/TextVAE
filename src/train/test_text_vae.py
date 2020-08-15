@@ -31,5 +31,5 @@ def test_vae(config):
     model = torch.load(save_path)
     criterion = nn.CrossEntropyLoss(ignore_index=PAD_INDEX)
 
-    test_loss, test_wer = eval_text_vae(model, test_iter, criterion)
-    print('test_ppl: %.4f\ttest_wer: %.4f' % (math.exp(test_loss), test_wer))
+    test_loss, test_wer, sample_ppl = eval_text_vae(model, test_iter, criterion)
+    print('test_ppl: %.4f\ttest_wer: %.4f\tsample_ppl: %.4f' % (math.exp(test_loss), test_wer, sample_ppl))

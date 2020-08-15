@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 from sklearn.cross_decomposition import CCA
 import os
+import pickle
 
 class Solver(nn.Module):
 
@@ -43,6 +44,17 @@ def solve(m, A, v):
     # print(solver.solution.t().matmul(v).item())
     return solver.solution
 
+def evaluate_disentanglement(principal_directions):
+    keys = list(principal_directions.keys())
+    n_keys = len(keys)
+    for i, key in enumerate([''] + keys):
+        print(key, end='\t' if i < n_keys else '\n')
+    for key1 in keys:
+        print(key1, end='\t')
+        for j, key2 in enumerate(keys):
+            cosine = float(principal_directions[key1].dot(principal_directions[key2]))
+            print('%.2f' % cosine, end='\t' if j < n_keys - 1 else '\n')
+
 def visualize(config):
 
     base_path = config['base_path']
@@ -61,6 +73,8 @@ def visualize(config):
 
     prop_names = df.columns.values[2:]
 
+    principal_directions = {}
+
     for i, prop_name in enumerate(prop_names):
 
         plt.subplot(2, 2, i + 1)
@@ -71,6 +85,8 @@ def visualize(config):
         c_encoding, c_prop = cca.fit_transform(encoding, prop)
         v = cca.x_rotations_
 
+        principal_directions[prop_name[0:6]] = v[:, 0]
+
         corr = np.corrcoef(c_encoding[:, 0], c_prop)[0, 1]
 
         A = encoding.transpose().dot(encoding) / n
@@ -78,12 +94,16 @@ def visualize(config):
 
         sign = 1 if corr >= 0 else -1
 
+        print('%s correlation: %.4f' % (prop_name, sign * corr))
+
         x = encoding.dot(v)[:, 0] * sign
         y = encoding.dot(u)[:, 0]
 
         plt.scatter(x, y, c=prop, s=0.1)
         plt.colorbar()
         plt.title('%s (correlation: %.4f)' % (prop_name, abs(corr)))
+
+    evaluate_disentanglement(principal_directions)
 
     plt.subplots_adjust(hspace=0.3)
     save_path = os.path.join(base_path, 'visualize.jpg')

@@ -33,4 +33,6 @@ class Encoder(nn.Module):
         # output = output.index_select(dim=0, index=reorder_index)
         hidden_states = hidden_states.index_select(dim=1, index=reorder_index)
         hidden_states = torch.cat(hidden_states.chunk(chunks=2, dim=0), dim=2)
-        return hidden_states
+        cell_states = cell_states.index_select(dim=1, index=reorder_index)
+        cell_states = torch.cat(cell_states.chunk(chunks=2, dim=0), dim=2)
+        return cell_states

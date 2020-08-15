@@ -25,6 +25,7 @@ class Decoder(nn.Module):
 
     def forward(self, hidden, trg):
         cell = torch.zeros(hidden.size(), dtype=hidden.dtype, device=hidden.device)
+        hidden, cell = cell, hidden
         max_len = trg.size(1)
         logit = []
         for i in range(max_len):
@@ -44,6 +45,7 @@ class Decoder(nn.Module):
 
     def decode(self, hidden, max_len):
         cell = torch.zeros(hidden.size(), dtype=hidden.dtype, device=hidden.device)
+        hidden, cell = cell, hidden
         batch_size = hidden.size(1)
         token = torch.tensor([SOS_INDEX] * batch_size, dtype=torch.long, device=hidden.device)
         logit = []
