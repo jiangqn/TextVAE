@@ -5,10 +5,8 @@ from torchtext import data
 from torchtext.data import TabularDataset, Iterator
 import logging
 import pickle
-import math
 import numpy as np
 from src.model.text_vae import TextVAE
-from src.model.lstm_vae import LSTM_VAE
 from src.constants import PAD_INDEX, SOS, EOS
 from src.train.eval import eval_text_vae
 from src.gaussian_kldiv import GaussianKLDiv
@@ -44,8 +42,8 @@ def train_vae(config):
     TEXT.vocab = vocab
     vocab_size = len(vocab.itos)
     logger.info('vocab_size: %d' % vocab_size)
-    logger.info('load pretrained embedding')
-    embedding = np.load(embedding_path)
+    # logger.info('load pretrained embedding')
+    # embedding = np.load(embedding_path)
 
     logger.info('build data iterator')
     device = torch.device('cuda:0')
@@ -76,15 +74,21 @@ def train_vae(config):
     logger.info('start train')
 
     min_dev_loss = 1e9
-    corr_dev_wer = 1
+    corr_ce_loss = 1e9
+    corr_kl_loss = 1e9
+    corr_wer = 1
+    corr_sample_ppl = 1e9
+    corr_epoch = 0
+    corr_step = 0
 
     global_step = 0 # min(globel_step, config['anneal_step']) / config['anneal_step']
 
     for epoch in range(config['epoches']):
 
         total_tokens = 0
+        total_samples = 0
+
         correct_tokens = 0
-        total_loss = 0
         total_ce_loss = 0
         total_kl_loss = 0
 
@@ -104,9 +108,11 @@ def train_vae(config):
             trg_output = trg_output.view(-1)
             output_size = logit.size(-1)
             logit = logit.view(-1, output_size)
+
             ce_loss = criterion(logit, trg_output)
             kl_loss = kldiv(mean, std)
-            loss = ce_loss + kl_loss * config['lambd'] * min(global_step, config['anneal_step']) / config['anneal_step']
+            coefficient = config['lambd'] * min(global_step, config['anneal_step']) / config['anneal_step']
+            loss = ce_loss + kl_loss * coefficient
             loss.backward()
             nn.utils.clip_grad_norm_(model.parameters(), config['clip_grad_norm'])
             optimizer.step()
@@ -115,26 +121,38 @@ def train_vae(config):
             mask = (trg_output != PAD_INDEX)
             token_num = mask.long().sum().item()
             total_tokens += token_num
-            total_loss += token_num * loss.item()
+            total_samples += batch_size
+
             total_ce_loss += token_num * ce_loss.item()
-            total_kl_loss += token_num * kl_loss.item()
+            total_kl_loss += batch_size * kl_loss.item()
             prediction = logit.argmax(dim=-1)
             correct_tokens += (prediction.masked_select(mask) == trg_output.masked_select(mask)).long().sum().item()
 
             if i % config['eval_freq'] == 0:
-                train_loss = total_loss / total_tokens
                 train_wer = 1 - correct_tokens / total_tokens
-                total_loss = 0
+                train_ce_loss = total_ce_loss / total_tokens
+                train_kl_loss = total_kl_loss / total_samples
                 correct_tokens = 0
+                total_ce_loss = 0
+                total_kl_loss = 0
                 total_tokens = 0
-                dev_loss, dev_wer, sample_ppl = eval_text_vae(model, dev_iter, criterion)
-                logger.info('[epoch %2d step %4d]\ttrain_ppl: %.4f train_wer: %.4f dev_ppl: %.4f dev_wer: %.4f sample_ppl: %.4f' %
-                            (epoch, i, math.exp(train_loss), train_wer, math.exp(dev_loss), dev_wer, sample_ppl))
-                sample_eval(model)
+                total_samples = 0
+
+                dev_ce_loss, dev_kl_loss, dev_wer, sample_ppl = eval_text_vae(model, dev_iter)
+                logger.info('[epoch %2d step %4d]\ttrain_ce_loss: %.4f train_kl_loss: %.4f train_ppl: %.4f train_wer: %.4f dev_ce_loss: %.4f dev_kl_loss: %.4f dev_ppl: %.4f dev_wer: %.4f sample_ppl: %.4f'
+                            % (epoch, i, train_ce_loss, train_kl_loss, 2 ** train_ce_loss, train_wer, dev_ce_loss, dev_kl_loss, 2 ** dev_ce_loss, dev_wer, sample_ppl))
+
+                dev_loss = dev_ce_loss + dev_kl_loss * coefficient
                 if dev_loss < min_dev_loss:
                     min_dev_loss = dev_loss
-                    corr_dev_wer = dev_wer
+                    corr_ce_loss = dev_ce_loss
+                    corr_kl_loss = dev_kl_loss
+                    corr_wer = dev_wer
+                    corr_sample_ppl = sample_ppl
+                    corr_epoch = epoch
+                    corr_step = i
                     torch.save(model, save_path)
 
-    logger.info('dev_ppl: %.4f\tdev_wer: %.4f' % (math.exp(min_dev_loss), corr_dev_wer))
+    logger.info('[best checkpoint] at [epoch %2d step %4d] dev_ce_loss: %.4f dev_kl_loss: %.4f dev_ppl: %.4f dev_wer: %.4f sample_ppl: %.4f'
+                % (corr_epoch, corr_step, corr_ce_loss, corr_kl_loss, 2 ** corr_ce_loss, corr_wer, sample_ppl))
     logger.info('finish')

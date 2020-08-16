@@ -43,6 +43,6 @@ def predict_language_model(model_path, file_path, vocab_path, batch_size=64):
             output_sentence = output_sentence.reshape(batch_size, -1)
             mask = (output_sentence != PAD_INDEX).float()
             output_sentence_lens = mask.sum(dim=1, keepdim=False)
-            batch_ppl = torch.exp((loss * mask).sum(dim=1, keepdim=False) / output_sentence_lens)
+            batch_ppl = torch.pow(2, (loss * mask).sum(dim=1, keepdim=False) / output_sentence_lens)
             ppl.extend(batch_ppl.tolist())
     return ppl

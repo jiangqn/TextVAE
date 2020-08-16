@@ -61,6 +61,7 @@ def visualize(config):
 
     sample_save_path = os.path.join(base_path, 'sample10000.tsv')
     encoding_save_path = '.'.join(sample_save_path.split('.')[0:-1]) + '.npy'
+    principal_directions_save_path = os.path.join(base_path, 'principal_directions.pkl')
 
     encoding = np.load(encoding_save_path)
     n, m = encoding.shape
@@ -104,6 +105,9 @@ def visualize(config):
         plt.title('%s (correlation: %.4f)' % (prop_name, abs(corr)))
 
     evaluate_disentanglement(principal_directions)
+
+    with open(principal_directions_save_path, 'wb') as handle:
+        pickle.dump(principal_directions, handle)
 
     plt.subplots_adjust(hspace=0.3)
     save_path = os.path.join(base_path, 'visualize.jpg')

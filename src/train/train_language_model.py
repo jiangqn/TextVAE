@@ -5,7 +5,6 @@ from torchtext import data
 from torchtext.data import TabularDataset, Iterator
 import logging
 import pickle
-import math
 import numpy as np
 from src.model.language_model import LanguageModel
 from src.constants import PAD_INDEX, SOS, EOS
@@ -108,11 +107,11 @@ def train_language_model(config):
                 total_tokens = 0
                 dev_loss = eval_language_model(model, dev_iter, criterion)
                 logger.info('[epoch %2d step %4d]\ttrain_loss: %.4f train_ppl: %.4f dev_loss: %.4f dev_ppl: %.4f' %
-                            (epoch, i, train_loss, math.exp(train_loss), dev_loss, math.exp(dev_loss)))
+                            (epoch, i, train_loss, 2 ** train_loss, dev_loss, 2 ** dev_loss))
 
                 if dev_loss < min_dev_loss:
                     min_dev_loss = dev_loss
                     torch.save(model, save_path)
 
-    logger.info('dev_loss: %.4f\tdev_ppl: %.4f' % (min_dev_loss, math.exp(min_dev_loss)))
+    logger.info('dev_loss: %.4f\tdev_ppl: %.4f' % (min_dev_loss, 2 ** min_dev_loss))
     logger.info('finish')
