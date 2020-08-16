@@ -49,7 +49,7 @@ class TextVAE(nn.Module):
     def encode(self, src):
         final_states = self.encoder(src)
         mean = self.mean_projection(final_states)
-        std = F.softplus(self.std_projection(final_states))
+        std = torch.exp(self.std_projection(final_states))
         # std = torch.exp(self.std_projection(final_states))
         sample = torch.randn(size=mean.size(), device=mean.device)
         encoding = mean + std * sample
