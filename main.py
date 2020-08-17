@@ -4,7 +4,7 @@ import yaml
 parser = argparse.ArgumentParser()
 parser.add_argument('--model', type=str, default='vae', choices=['vae', 'text_cnn', 'lm'])
 parser.add_argument('--task', type=str, default='train', choices=['train', 'test', 'sample',
-    'predict', 'correlation', 'visualize', 'pca_visualize', 'linear_separate', 'sample_sentiment', 'sample_length'])
+    'predict', 'correlation', 'visualize', 'pca_visualize', 'linear_separate', 'sample_sentiment', 'sample_syntax'])
 parser.add_argument('--gpu', type=int, default=0, choices=[i for i in range(8)])
 parser.add_argument('--config', type=str, default='config.yaml')
 
@@ -38,9 +38,9 @@ if args.model == 'vae':
     elif args.task == 'sample_sentiment':
         from src.sample_sentiment import sample_sentiment
         sample_sentiment(config)
-    elif args.task == 'sample_length':
-        from src.sample_syntax import sample_length
-        sample_length(config)
+    elif args.task == 'sample_syntax':
+        from src.sample_syntax import sample_syntax
+        sample_syntax(config)
     else:
         from src.pca_visualize import pca_visualize
         pca_visualize(config)

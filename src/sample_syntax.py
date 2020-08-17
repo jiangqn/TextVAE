@@ -4,14 +4,27 @@ import numpy as np
 import pickle
 import csv
 import joblib
-from src.constants import SOS, EOS
+from src.tsv_reader import read_prop
 from src.utils import convert_tensor_to_texts
 
-def interpolate(encoding, direction, interval):
-    pass
+def interpolate(encoding, direction, scope, intervals):
+    sample_num = encoding.size(1)
+    hidden_size = encoding.size(2)
+    encoding = encoding.transpose(0, 1).reshape(sample_num, -1)
+    projection = encoding.matmul(direction)
+    start_encoding = encoding + (-scope - projection) * direction.transpose(0, 1)
+    end_encoding = encoding + (scope - projection) * direction.transpose(0, 1)
+    weights = torch.arange(0, 1, 1 / intervals, device=encoding.device)
+    start_encoding = start_encoding.unsqueeze(1).repeat(1, intervals, 1)
+    end_encoding = end_encoding.unsqueeze(1).repeat(1, intervals, 1)
+    weights = weights.unsqueeze(0).unsqueeze(-1)
+    encoding = start_encoding * (1 - weights) + end_encoding * weights
+    encoding = encoding.reshape(sample_num * intervals, -1)
+    encoding = encoding.reshape(sample_num * intervals, 1, hidden_size).transpose(0, 1)
+    return encoding
 
 def sample_from_encoding(model, vocab, encoding, batch_size):
-    sample_num = encoding.size(0)
+    sample_num = encoding.size(1)
     sentences = []
     start = 0
     while start < sample_num:
@@ -23,14 +36,16 @@ def sample_from_encoding(model, vocab, encoding, batch_size):
 
 def sample_syntax(config):
 
-    prop = 'length'
+    prop_name = 'depth'
+    scope = 2
+    intervals = 5
 
     base_path = config['base_path']
 
     # sample_num = int(input('sample num: '))
-    sample_num = 10000
+    sample_num = 1000
     # sample_save_path = input('save path: ')
-    sample_save_path = os.path.join(base_path, 'sample_length100.tsv')
+    sample_save_path = os.path.join(base_path, 'sample_%s%d.tsv' % (prop_name, sample_num))
     # save_encoding = input('save_encoding: ') == 'True'
     save_encoding = True
 
@@ -50,22 +65,29 @@ def sample_syntax(config):
         principal_directions = pickle.load(handle)
 
     model = torch.load(save_path)
-
-    length_direction = torch.from_numpy(principal_directions['length'])
-
+    device = model.encoder.embedding.weight.device
     batch_size = config['vae']['batch_size']
+
+    encoding = torch.randn(size=(num_layers, sample_num, hidden_size), device=device)
+    direction = torch.from_numpy(principal_directions[prop_name]).unsqueeze(-1).float().to(device)
+    encoding = interpolate(encoding, direction, scope, intervals)
 
     sentences = ['sentence']
 
-    # sentences.extend(sample_from_encoding(model, vocab, positive_encoding, batch_size))
-    # sentences.extend(sample_from_encoding(model, vocab, negative_encoding, batch_size))
-    #
-    # sentences = [[sentence] for sentence in sentences]
-    # if save_encoding:
-    #     encoding = np.concatenate((positive_encoding, negative_encoding), axis=0)
-    #     encoding_save_path = '.'.join(sample_save_path.split('.')[0:-1]) + '.npy'
-    #     np.save(encoding_save_path, encoding)
-    #
-    # with open(sample_save_path, 'w') as f:
-    #     writer = csv.writer(f, delimiter='\t')
-    #     writer.writerows(sentences)
+    sentences.extend(sample_from_encoding(model, vocab, encoding, batch_size))
+
+    sentences = [[sentence] for sentence in sentences]
+    if save_encoding:
+        encoding = encoding.transpose(0, 1).reshape(sample_num * intervals, -1).cpu().numpy()
+        encoding_save_path = '.'.join(sample_save_path.split('.')[0:-1]) + '.npy'
+        np.save(encoding_save_path, encoding)
+
+    with open(sample_save_path, 'w') as f:
+        writer = csv.writer(f, delimiter='\t')
+        writer.writerows(sentences)
+
+    prop = read_prop(sample_save_path, prop_name)
+    projection = np.asarray(torch.arange(-scope, scope, 2 * scope / intervals).tolist() * sample_num)
+
+    corr = float(np.corrcoef(projection, prop)[0, 1])
+    print('%s correlation: %.4f' % (prop_name, corr))
