@@ -86,18 +86,19 @@ def visualize(config):
         c_encoding, c_prop = cca.fit_transform(encoding, prop)
         v = cca.x_rotations_
 
-        principal_directions[prop_name[0:6]] = v[:, 0]
-
         corr = np.corrcoef(c_encoding[:, 0], c_prop)[0, 1]
 
         A = encoding.transpose().dot(encoding) / n
         u = solve(m, torch.tensor(A).float(), torch.tensor(v).float()).numpy().astype(np.float64)
 
         sign = 1 if corr >= 0 else -1
+        v = v * sign
+
+        principal_directions[prop_name[0:6]] = v[:, 0]
 
         print('%s correlation: %.4f' % (prop_name, sign * corr))
 
-        x = encoding.dot(v)[:, 0] * sign
+        x = encoding.dot(v)[:, 0]
         y = encoding.dot(u)[:, 0]
 
         plt.scatter(x, y, c=prop, s=0.1)

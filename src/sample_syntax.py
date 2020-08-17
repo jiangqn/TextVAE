@@ -38,7 +38,7 @@ def sample_syntax(config):
 
     prop_name = 'depth'
     scope = 2
-    intervals = 5
+    intervals = 10
 
     base_path = config['base_path']
 
