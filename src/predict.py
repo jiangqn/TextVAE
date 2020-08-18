@@ -26,7 +26,7 @@ def predict(config):
     from src.sentence_depth import sentence_depth
     depth = [sentence_depth(sentence) for sentence in list(df.loc[:, 'sentence'])]
     df['sentiment'] = sentiment
-    df['logppl'] = [math.log(x) for x in ppl]
+    df['logppl'] = [math.log2(x) for x in ppl]
     df['length'] = length
     df['depth'] = depth
     df.to_csv(sample_save_path, sep='\t')

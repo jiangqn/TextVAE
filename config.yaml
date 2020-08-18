@@ -1,5 +1,5 @@
 base_path: data
-glove_source_path: /home/data_ti4_c/jiangqn/datasets/embeddings/glove.840B.300d.txt
+glove_source_path: /home/jiangqn/datasets/embeddings/glove.840B.300d.txt
 text_cnn:
   embed_size: 300
   kernel_sizes: [3, 4, 5]
@@ -28,13 +28,14 @@ vae:
   hidden_size: 300
   num_layers: 1
   dropout: 0.3
+  word_dropout: 0.5
   enc_dec_tying: False
   dec_gen_tying: True
   batch_size: 64
-  lambd: 10
+  lambd: 14
   lr: 0.001
   weight_decay: 0
-  epoches: 5
+  epoches: 1
   eval_freq: 100
   clip_grad_norm: 5.0
-  anneal_step: 8000
+  anneal_step: 500

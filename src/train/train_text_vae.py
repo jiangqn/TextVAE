@@ -42,8 +42,8 @@ def train_vae(config):
     TEXT.vocab = vocab
     vocab_size = len(vocab.itos)
     logger.info('vocab_size: %d' % vocab_size)
-    # logger.info('load pretrained embedding')
-    # embedding = np.load(embedding_path)
+    logger.info('load pretrained embedding')
+    embedding = np.load(embedding_path)
 
     logger.info('build data iterator')
     device = torch.device('cuda:0')
@@ -57,11 +57,12 @@ def train_vae(config):
         hidden_size=config['hidden_size'],
         num_layers=config['num_layers'],
         dropout=config['dropout'],
+        word_dropout=config['word_dropout'],
         enc_dec_tying=config['enc_dec_tying'],
         dec_gen_tying=config['dec_gen_tying']
     )
-    # model.encoder.embedding.weight.data.copy_(torch.tensor(embedding))
-    # model.decoder.embedding.weight.data.copy_(torch.tensor(embedding))
+    model.encoder.embedding.weight.data.copy_(torch.tensor(embedding))
+    model.decoder.embedding.weight.data.copy_(torch.tensor(embedding))
 
     logger.info('transfer model to GPU')
     model = model.to(device)
@@ -154,5 +155,5 @@ def train_vae(config):
                     torch.save(model, save_path)
 
     logger.info('[best checkpoint] at [epoch %2d step %4d] dev_ce_loss: %.4f dev_kl_loss: %.4f dev_ppl: %.4f dev_wer: %.4f sample_ppl: %.4f'
-                % (corr_epoch, corr_step, corr_ce_loss, corr_kl_loss, 2 ** corr_ce_loss, corr_wer, sample_ppl))
+                % (corr_epoch, corr_step, corr_ce_loss, corr_kl_loss, 2 ** corr_ce_loss, corr_wer, corr_sample_ppl))
     logger.info('finish')

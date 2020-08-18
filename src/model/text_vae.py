@@ -8,7 +8,7 @@ from src.constants import PAD_INDEX, UNK_INDEX
 
 class TextVAE(nn.Module):
 
-    def __init__(self, vocab_size, embed_size, hidden_size, num_layers, dropout, enc_dec_tying, dec_gen_tying):
+    def __init__(self, vocab_size, embed_size, hidden_size, num_layers, dropout, word_dropout, enc_dec_tying, dec_gen_tying):
         super(TextVAE, self).__init__()
         self.hidden_size = hidden_size
         self.num_layers = num_layers
@@ -27,6 +27,7 @@ class TextVAE(nn.Module):
             dropout=dropout,
             weight_tying=dec_gen_tying
         )
+        self.word_dropout_rate = word_dropout
         if enc_dec_tying:
             self.decoder.embedding.weight = self.encoder.embedding.weight
         self.mean_projection = nn.Linear(2 * hidden_size, hidden_size)
@@ -41,7 +42,7 @@ class TextVAE(nn.Module):
     def word_dropout(self, trg):
         mask = (trg == PAD_INDEX)
         p = torch.FloatTensor(mask.size()).to(trg.device)
-        constant_(p, 0.5)
+        constant_(p, 1 - self.word_dropout_rate)
         p.masked_fill_(mask, 1)
         mask = torch.bernoulli(p).long()
         return mask * trg
