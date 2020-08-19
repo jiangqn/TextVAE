@@ -1,7 +1,7 @@
 import torch
 from torch import nn
 from src.model.multi_layer_gru_cell import MultiLayerGRUCell
-from src.constants import SOS_INDEX
+from src.constants import SOS_INDEX, EOS_INDEX
 
 class Decoder(nn.Module):
 
@@ -46,6 +46,8 @@ class Decoder(nn.Module):
         logit = []
         for i in range(max_len):
             hidden, token_logit = self.step(hidden, token)
+            if i == 0:
+                token_logit[:, EOS_INDEX] = 0
             token = token_logit.argmax(dim=-1)
             logit.append(token_logit)
         logit = torch.stack(logit, dim=1)

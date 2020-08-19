@@ -2,6 +2,7 @@ import os
 import numpy as np
 import pandas as pd
 from sklearn.linear_model import LogisticRegression
+from sklearn.svm import LinearSVC
 import joblib
 
 def linear_separate(config):
@@ -18,6 +19,7 @@ def linear_separate(config):
     sentiment = np.asarray(df['sentiment']).astype(np.float32)
     sentiment = (sentiment >= 0.5).astype(np.int32)
     model = LogisticRegression()
+    # model = LinearSVC(max_iter=10000)
     model.fit(encoding, sentiment)
     pred_sentiment = model.predict(encoding)
     accuracy = (sentiment == pred_sentiment).astype(np.float32).mean()

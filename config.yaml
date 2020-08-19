@@ -27,7 +27,7 @@ vae:
   embed_size: 300
   hidden_size: 300
   num_layers: 1
-  dropout: 0.3
+  dropout: 0.4
   word_dropout: 0.5
   enc_dec_tying: False
   dec_gen_tying: True
