@@ -6,7 +6,7 @@ from src.constants import PAD_INDEX
 
 class Encoder(nn.Module):
 
-    def __init__(self, vocab_size, embed_size, hidden_size, num_layers, dropout):
+    def __init__(self, vocab_size: int, embed_size: int, hidden_size: int, num_layers: int, dropout: float) -> None:
         super(Encoder, self).__init__()
         self.embedding = nn.Embedding(num_embeddings=vocab_size, embedding_dim=embed_size)
         self.rnn = nn.GRU(
@@ -19,18 +19,28 @@ class Encoder(nn.Module):
         )
         self.dropout = dropout
 
-    def forward(self, src):
+    def forward(self, src: torch.Tensor) -> torch.Tensor:
+        '''
+        encode sentences into vector representations
+
+        :param src: torch.LongTensor (batch_size, seq_len)
+        :return final_states: torch.FloatTensor (num_layers, batch_size, hidden_size * 2)
+        '''
+
         src_mask = (src != PAD_INDEX)
         src_lens = src_mask.long().sum(dim=1, keepdim=False)
+
         src_embedding = self.embedding(src)
         src = F.dropout(src_embedding, p=self.dropout, training=self.training)
+
         src_lens, sort_index = src_lens.sort(descending=True)
         src = src.index_select(dim=0, index=sort_index)
         packed_src = pack_padded_sequence(src, src_lens, batch_first=True)
+
         packed_output, final_states = self.rnn(packed_src)
-        # output, _ = pad_packed_sequence(packed_output, batch_first=True)
+
         reorder_index = sort_index.argsort(descending=False)
-        # output = output.index_select(dim=0, index=reorder_index)
         final_states = final_states.index_select(dim=1, index=reorder_index)
+
         final_states = torch.cat(final_states.chunk(chunks=2, dim=0), dim=2)
         return final_states

@@ -1,8 +1,8 @@
 import torch
 from torch import nn
 from src.constants import PAD_INDEX
-from src.train.sample_eval import sample_eval
-from src.gaussian_kldiv import GaussianKLDiv
+from src.train.sample_eval import sample_eval_by_language_model
+from src.utils.gaussian_kldiv import GaussianKLDiv
 
 def eval_text_cnn(model, data_iter, criterion=None):
 
@@ -65,7 +65,7 @@ def eval_language_model(model, data_iter, criterion):
     loss = total_loss / total_tokens
     return loss
 
-def eval_text_vae(model, data_iter):
+def eval_text_vae(model, data_iter, base_path, **kwargs):
 
     criterion = nn.CrossEntropyLoss(ignore_index=PAD_INDEX)
     kldiv = GaussianKLDiv()
@@ -110,6 +110,6 @@ def eval_text_vae(model, data_iter):
     ce_loss = total_ce_loss / total_tokens
     kl_loss = total_kl_loss / total_samples
     wer = 1 - correct_tokens / total_tokens
-    sample_ppl = sample_eval(model)
+    sample_ppl = sample_eval_by_language_model(model, base_path, **kwargs)
 
     return ce_loss, kl_loss, wer, sample_ppl

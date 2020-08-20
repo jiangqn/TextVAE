@@ -1,14 +1,12 @@
 import torch
-from torch import nn
 from torchtext import data
 from torchtext.data import TabularDataset, Iterator
 import os
-import math
 import pickle
 from src.train.eval import eval_text_vae
 from src.constants import SOS, EOS, PAD_INDEX
 
-def test_vae(config):
+def test_vae(config: dict) -> None:
 
     os.environ['CUDA_VISIBLE_DEVICES'] = str(config['gpu'])
 
@@ -29,7 +27,7 @@ def test_vae(config):
     test_iter = Iterator(test_data, batch_size=config['vae']['batch_size'], shuffle=False, device=device)
 
     model = torch.load(save_path)
-    criterion = nn.CrossEntropyLoss(ignore_index=PAD_INDEX)
 
-    test_loss, test_wer, sample_ppl = eval_text_vae(model, test_iter, criterion)
-    print('test_ppl: %.4f\ttest_wer: %.4f\tsample_ppl: %.4f' % (math.exp(test_loss), test_wer, sample_ppl))
+    test_ce_loss, test_kl_loss, test_wer, sample_ppl = eval_text_vae(model, test_iter)
+    print('test_ce_loss: %.4f\ttest_kl_loss: %.4f\ttest_ppl: %.4f\ttest_wer: %.4f\tsample_ppl: %.4f' %
+          (test_ce_loss, test_kl_loss, 2 ** test_ce_loss, test_wer, sample_ppl))

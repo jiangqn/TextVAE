@@ -5,7 +5,7 @@ import os
 import pickle
 from src.train.eval import eval_text_cnn
 
-def test_text_cnn(config):
+def test_text_cnn(config: dict) -> None:
 
     os.environ['CUDA_VISIBLE_DEVICES'] = str(config['gpu'])
 

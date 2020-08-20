@@ -3,13 +3,11 @@ import torch
 import numpy as np
 import pickle
 import csv
-import joblib
-from src.tsv_reader import read_prop
-from src.utils import convert_tensor_to_texts
+from src.utils.tsv_reader import read_prop
+from src.utils.convert_tensor_to_texts import convert_tensor_to_texts
 
 def interpolate(encoding, direction, scope, intervals):
-    sample_num = encoding.size(1)
-    hidden_size = encoding.size(2)
+    num_layers, sample_num, hidden_size = encoding.size()
     encoding = encoding.transpose(0, 1).reshape(sample_num, -1)
     projection = encoding.matmul(direction)
     start_encoding = encoding + (-scope - projection) * direction.transpose(0, 1)
@@ -20,7 +18,7 @@ def interpolate(encoding, direction, scope, intervals):
     weights = weights.unsqueeze(0).unsqueeze(-1)
     encoding = start_encoding * (1 - weights) + end_encoding * weights
     encoding = encoding.reshape(sample_num * intervals, -1)
-    encoding = encoding.reshape(sample_num * intervals, 1, hidden_size).transpose(0, 1)
+    encoding = encoding.reshape(sample_num * intervals, num_layers, hidden_size).transpose(0, 1)
     return encoding
 
 def sample_from_encoding(model, vocab, encoding, batch_size):
@@ -34,11 +32,10 @@ def sample_from_encoding(model, vocab, encoding, batch_size):
         start = end
     return sentences
 
-def sample_syntax(config):
+def syntax_sample(config: dict, prop_name: str) -> None:
 
-    prop_name = 'depth'
-    scope = 2
-    intervals = 10
+    scope = config['%s_sample' % prop_name]['scope']
+    intervals = config['%s_sample' % prop_name]['intervals']
 
     base_path = config['base_path']
 

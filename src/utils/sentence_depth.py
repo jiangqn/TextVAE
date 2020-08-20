@@ -20,13 +20,13 @@
 import spacy
 nlp = spacy.load('en')
 
-def dfs(graph, root):
+def dfs(graph: dict, root: spacy.tokens.token.Token) -> int:
     if not root in graph:
         return 1
     else:
         return max([dfs(graph, node) for node in graph[root]]) + 1
 
-def sentence_depth(sentence):
+def sentence_depth(sentence: str) -> int:
     doc = nlp(sentence)
     sentence = [s for s in doc.sents][0]
     graph = {}

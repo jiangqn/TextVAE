@@ -3,8 +3,8 @@ import yaml
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--model', type=str, default='vae', choices=['vae', 'text_cnn', 'lm'])
-parser.add_argument('--task', type=str, default='train', choices=['train', 'test', 'sample',
-    'predict', 'correlation', 'visualize', 'pca_visualize', 'linear_separate', 'sample_sentiment', 'sample_syntax'])
+parser.add_argument('--task', type=str, default='train', choices=['train', 'test', 'vanilla_sample', 'get_features', 'correlation',
+        'visualize', 'pca_visualize', 'tsne_visualize', 'linear_separate', 'sentiment_sample', 'length_sample', 'depth_sample'])
 parser.add_argument('--gpu', type=int, default=0, choices=[i for i in range(8)])
 parser.add_argument('--config', type=str, default='config.yaml')
 
@@ -20,30 +20,36 @@ if args.model == 'vae':
     elif args.task == 'test':
         from src.train.test_text_vae import test_vae
         test_vae(config)
-    elif args.task == 'sample':
-        from src.sample_from_vae import sample_from_vae
-        sample_from_vae(config)
-    elif args.task == 'predict':
-        from src.predict import predict
-        predict(config)
+    elif args.task == 'vanilla_sample':
+        from src.sample.vanilla_sample import vanilla_sample
+        vanilla_sample(config)
+    elif args.task == 'get_features':
+        from src.get_features.get_features import get_features
+        get_features(config)
     elif args.task == 'correlation':
-        from src.correlation import correlation
+        from src.utils.correlation import correlation
         correlation(config)
     elif args.task == 'visualize':
-        from src.visualize import visualize
+        from src.utils.visualize import visualize
         visualize(config)
+    elif args.task == 'pca_visualize':
+        from src.utils.vanilla_visualize import vanilla_visualize
+        vanilla_visualize(config, 'pca')
+    elif args.task == 'tsne_visualize':
+        from src.utils.vanilla_visualize import vanilla_visualize
+        vanilla_visualize(config, 'tsne')
     elif args.task == 'linear_separate':
-        from src.linear_separate import linear_separate
+        from src.utils.linear_separate import linear_separate
         linear_separate(config)
-    elif args.task == 'sample_sentiment':
-        from src.sample_sentiment import sample_sentiment
+    elif args.task == 'sentiment_sample':
+        from src.sample.sentiment_sample import sample_sentiment
         sample_sentiment(config)
-    elif args.task == 'sample_syntax':
-        from src.sample_syntax import sample_syntax
-        sample_syntax(config)
-    else:
-        from src.pca_visualize import pca_visualize
-        pca_visualize(config)
+    elif args.task == 'length_sample':
+        from src.sample.syntax_sample import syntax_sample
+        syntax_sample(config, 'length')
+    elif args.task == 'depth_sample':
+        from src.sample.syntax_sample import syntax_sample
+        syntax_sample(config, 'depth')
 elif args.model == 'lm':
     if args.task == 'train':
         from src.train.train_language_model import train_language_model

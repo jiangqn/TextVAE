@@ -1,5 +1,5 @@
 import pandas as pd
-from src.sentence_depth import sentence_depth
+from src.utils.sentence_depth import sentence_depth
 
 def read_prop(path, prop):
     assert prop in ['length', 'depth']

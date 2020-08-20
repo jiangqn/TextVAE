@@ -7,7 +7,7 @@ import pickle
 from src.train.eval import eval_language_model
 from src.constants import SOS, EOS, PAD_INDEX
 
-def test_language_model(config):
+def test_language_model(config: dict) -> None:
 
     os.environ['CUDA_VISIBLE_DEVICES'] = str(config['gpu'])
 

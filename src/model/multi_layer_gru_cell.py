@@ -4,22 +4,22 @@ import torch.nn.functional as F
 
 class MultiLayerGRUCell(nn.Module):
 
-    def __init__(self, input_size, hidden_size, num_layers=1, dropout=0, bias=True):
+    def __init__(self, input_size: int, hidden_size: int, num_layers: int = 1, dropout: float = 0, bias: bool = True) -> None:
         super(MultiLayerGRUCell, self).__init__()
         self.input_size = input_size
         self.hidden_size = hidden_size
         self.num_layers = num_layers
         self.dropout = dropout
         self.bias = bias
-        self.gru_cells = nn.ModuleList([nn.GRUCell(input_size, hidden_size, bias)])
-        for _ in range(num_layers - 1):
-            self.gru_cells.append(nn.GRUCell(input_size, hidden_size, bias))
+        self.gru_cells = nn.ModuleList(
+            [nn.GRUCell(input_size, hidden_size, bias)] + [nn.GRUCell(hidden_size, hidden_size, bias) for _ in range(num_layers - 1)]
+        )
 
-    def forward(self, input, states):
+    def forward(self, input: torch.Tensor, states: torch.Tensor) -> torch.Tensor:
         """
-        :param input: FloatTensor (batch_size, time_step, input_size)
-        :param states: FloatTensor (num_layers, batch_size, hidden_size)
-        :return output_hidden: FloatTensor (num_layers, batch_size, hidden_size)
+        :param input: torch.FloatTensor (batch_size, seq_len, input_size)
+        :param states: torch.FloatTensor (num_layers, batch_size, hidden_size)
+        :return output_hidden: torch.FloatTensor (num_layers, batch_size, hidden_size)
         """
         hidden = states
         output_hidden = []

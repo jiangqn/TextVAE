@@ -4,9 +4,8 @@ import numpy as np
 import pickle
 import csv
 import joblib
-from src.constants import SOS, EOS
-from src.utils import convert_tensor_to_texts
-from src.train.predict_text_cnn import predict_text_cnn
+from src.utils.convert_tensor_to_texts import convert_tensor_to_texts
+from src.get_features.get_category import get_categorical_features_from_tsv
 
 def rejection_sample(num, num_layers, hidden_size, model, label, device):
     encoding = torch.randn(size=(num_layers, num * 5, hidden_size), dtype=torch.float32, device=device)
@@ -82,7 +81,8 @@ def sample_sentiment(config):
         writer.writerows(sentences)
 
     text_cnn_path = os.path.join(base_path, 'text_cnn.pkl')
-    sentiment = predict_text_cnn(text_cnn_path, sample_save_path, vocab_path, batch_size)
+    sentiment = get_categorical_features_from_tsv(file_path=sample_save_path, batch_size=batch_size,
+        model_path=text_cnn_path, vocab_path=vocab_path, output_score=True)
     hit = 0
     for i, s in enumerate(sentiment):
         if (i < sample_positive_num and s >= 0.5) or (i >= sample_positive_num and s < 0.5):

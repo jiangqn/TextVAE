@@ -9,9 +9,9 @@ import numpy as np
 from src.model.text_cnn import TextCNN
 from src.train.eval import eval_text_cnn
 from src.constants import PAD, UNK, SOS, EOS
-from src.utils import load_glove
+from src.utils.load_glove import load_glove
 
-def train_text_cnn(config):
+def train_text_cnn(config: dict) -> dict:
 
     os.environ['CUDA_VISIBLE_DEVICES'] = str(config['gpu'])
 
@@ -69,7 +69,7 @@ def train_text_cnn(config):
         dropout=config['dropout'],
         num_categories=config['num_categories']
     )
-    model.embedding.weight.data.copy_(torch.tensor(embedding))
+    model.load_pretrained_embeddings(embedding=embedding)
     logger.info('transfer model to GPU')
     model = model.to(device)
 

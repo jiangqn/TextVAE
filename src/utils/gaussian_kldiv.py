@@ -8,4 +8,4 @@ class GaussianKLDiv(nn.Module):
 
     def forward(self, mean, std):
         assert mean.size() == std.size()
-        return 0.5 * ( -torch.log(std * std) + mean * mean + std * std - 1).mean()
+        return 0.5 * ( -torch.log(std * std) + mean * mean + std * std - 1).mean(dim=1).sum()

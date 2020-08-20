@@ -1,10 +1,12 @@
 import torch
 from torch import nn
 import torch.nn.functional as F
+from typing import List
+import numpy as np
 
 class TextCNN(nn.Module):
 
-    def __init__(self, vocab_size, embed_size, kernel_sizes, kernel_num, dropout, num_categories):
+    def __init__(self, vocab_size: int, embed_size: int, kernel_sizes: List[int], kernel_num: int, dropout: float, num_categories: int) -> None:
         super(TextCNN, self).__init__()
         self.embedding = nn.Embedding(num_embeddings=vocab_size, embedding_dim=embed_size)
         self.convs = nn.ModuleList(
@@ -18,7 +20,20 @@ class TextCNN(nn.Module):
         self.feature_size = len(kernel_sizes) * kernel_num
         self.linear = nn.Linear(self.feature_size, num_categories)
 
-    def forward(self, sentence):
+    def load_pretrained_embeddings(self, **kwargs) -> None:
+        assert ('path' in kwargs) ^ ('embedding' in kwargs)
+        if 'path' in kwargs:
+            embedding = np.load(kwargs['path'])
+        else:
+            embedding = kwargs['embedding']
+        self.embedding.weight.data.copy_(torch.tensor(embedding))
+
+    def forward(self, sentence: torch.Tensor) -> torch.Tensor:
+        '''
+        :param sentence: torch.LongTensor (batch_size, seq_len)
+        :return: torch.FloatTensor (batch_size, num_categories)
+        '''
+
         embedding = self.embedding(sentence)
         embedding = F.dropout(embedding, p=self.dropout, training=self.training)
         embedding = embedding.transpose(1, 2)

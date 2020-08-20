@@ -34,14 +34,10 @@ def solve(m, A, v):
         loss = solver(A, v)
         loss.backward()
         if i % 10 == 0:
-            # print('%d\t%.4f' % (i, loss.item()))
             if loss.item() < min_loss:
                 min_loss = loss.item()
                 solver.solution = deepcopy(solver.u.data)
         optimizer.step()
-    # print(min_loss)
-    # print(solver.solution.t().matmul(solver.solution).item())
-    # print(solver.solution.t().matmul(v).item())
     return solver.solution
 
 def evaluate_disentanglement(principal_directions):

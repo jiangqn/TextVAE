@@ -1,14 +1,11 @@
 import os
 import torch
-from torchtext import data
-from torchtext.data import TabularDataset, Iterator
 import numpy as np
 import pickle
 import csv
-from src.constants import SOS, EOS
-from src.utils import convert_tensor_to_texts
+from src.utils.convert_tensor_to_texts import convert_tensor_to_texts
 
-def sample_from_vae(config):
+def vanilla_sample(config: dict) -> None:
 
     base_path = config['base_path']
 

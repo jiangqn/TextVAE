@@ -1,11 +1,12 @@
 import torch
 from torch import nn
+from typing import List, Tuple
 from src.model.multi_layer_gru_cell import MultiLayerGRUCell
 from src.constants import SOS_INDEX, EOS_INDEX
 
 class Decoder(nn.Module):
 
-    def __init__(self, vocab_size, embed_size, hidden_size, num_layers, dropout, weight_tying):
+    def __init__(self, vocab_size: int, embed_size: int, hidden_size: int, num_layers: int, dropout: float, weight_tying: bool) -> None:
         super(Decoder, self).__init__()
         self.embedding = nn.Embedding(num_embeddings=vocab_size, embedding_dim=embed_size)
         self.rnn_cell = MultiLayerGRUCell(
@@ -23,7 +24,13 @@ class Decoder(nn.Module):
         if weight_tying:
             self.generator.weight = self.embedding.weight
 
-    def forward(self, hidden, trg):
+    def forward(self, hidden: torch.Tensor, trg: torch.Tensor) -> torch.Tensor:
+        '''
+        :param hidden: torch.FloatTensor (num_layers, batch_size, hidden_size)
+        :param trg: torch.LongTensor (batch_size, seq_len)
+        :return logit: torch.FloatTensor (batch_size, seq_len, vocab_size)
+        '''
+
         max_len = trg.size(1)
         logit = []
         for i in range(max_len):
@@ -32,7 +39,13 @@ class Decoder(nn.Module):
         logit = torch.stack(logit, dim=1)
         return logit
 
-    def step(self, hidden, token):
+    def step(self, hidden: torch.Tensor, token: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+        '''
+        :param hidden: torch.FloatTensor (num_layers, batch_size, hidden_size)
+        :param token: torch.LongTensor (batch_size,)
+        :return hidden: torch.FloatTensor (num_layers, batch_size, hidden_size)
+        :return token_logit: torch.FloatTensor (batch_size, logit)
+        '''
         token_embedding = self.embedding(token.unsqueeze(0)).squeeze(0)
         hidden = self.rnn_cell(token_embedding, hidden)
         top_hidden = hidden[-1]
@@ -40,7 +53,12 @@ class Decoder(nn.Module):
         token_logit = self.generator(output)
         return hidden, token_logit
 
-    def decode(self, hidden, max_len):
+    def decode(self, hidden: torch.Tensor, max_len: int) -> torch.Tensor:
+        '''
+        :param hidden: torch.FloatTensor (num_layers, batch_size, hidden_size)
+        :param max_len: int
+        :return logit: torch.FloatTensor (batch_size, seq_len, vocab_size)
+        '''
         batch_size = hidden.size(1)
         token = torch.tensor([SOS_INDEX] * batch_size, dtype=torch.long, device=hidden.device)
         logit = []
