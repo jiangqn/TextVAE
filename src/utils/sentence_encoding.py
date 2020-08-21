@@ -1,11 +1,55 @@
 import os
 import torch
 from torch import nn
+from torch import optim
 from torchtext import data
 from torchtext.data import TabularDataset, Iterator
 import numpy as np
 import pickle
-from src.constants import EOS
+from src.constants import SOS, EOS, PAD_INDEX
+
+def gradient_encoding(model: nn.Module, sentence: torch.Tensor, **kwargs) -> torch.Tensor:
+
+    lr = kwargs.get('lr', 0.001)
+    max_iter = kwargs.get('max_iter', 1000)
+
+    src = sentence[:, 1:]
+    trg_input = sentence
+    batch_size = sentence.size(0)
+    pad = torch.zeros(size=(batch_size, 1), dtype=torch.long, device=sentence.device)
+    trg_output = torch.cat((sentence[:, 1:], pad), dim=-1)
+
+    encoding = model.encode(src)
+    encoding = nn.Parameter(encoding)
+
+    optimizer = optim.Adam([encoding], lr=lr)
+
+    criterion = nn.CrossEntropyLoss(ignore_index=PAD_INDEX)
+
+    model.train()
+
+    min_loss = 1e9
+    best_encoding = encoding.data
+
+    for i in range(max_iter):
+
+        optimizer.zero_grad()
+
+        logit = model.decoder(encoding, trg_input)
+        trg_output = trg_output.view(-1)
+        output_size = logit.size(-1)
+        logit = logit.view(-1, output_size)
+
+        loss = criterion(logit, trg_output)
+        loss.backward()
+
+        optimizer.step()
+
+        if loss.item() < min_loss:
+            min_loss = loss.item()
+            best_encoding = encoding.data
+
+    return best_encoding
 
 def sentence_encoding(model: nn.Module, data_iter: Iterator, probabilistic_encoding: bool = False) -> torch.Tensor:
     '''
@@ -24,10 +68,12 @@ def sentence_encoding(model: nn.Module, data_iter: Iterator, probabilistic_encod
         for batch in data_iter:
 
             sentence = batch.sentence
+            src = sentence[:, 1:]
+
             if probabilistic_encoding:
-                batch_encoding, _, _ = model.probabilistic_encode(sentence)
+                batch_encoding, _, _ = model.probabilistic_encode(src)
             else:
-                batch_encoding, _ = model.encode(sentence)
+                batch_encoding, _ = model.encode(src)
 
             # batch_encoding = batch_encoding.cpu().numpy()
             encoding.append(batch_encoding)
@@ -47,7 +93,7 @@ def sentence_encoding_from_tsv(file_path: str, **kwargs) -> torch.Tensor:
     else:
         model = torch.load(kwargs['model'])
 
-    TEXT = data.Field(sequential=True, lower=True, batch_first=True, eos_token=EOS)
+    TEXT = data.Field(sequential=True, lower=True, batch_first=True, init_token=SOS, eos_token=EOS)
     fields = [('sentence', TEXT)]
 
     dataset = TabularDataset(file_path, format='tsv', skip_header=True, fields=fields)

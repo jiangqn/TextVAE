@@ -128,7 +128,7 @@ def train_vae(config: dict) -> None:
             prediction = logit.argmax(dim=-1)
             correct_tokens += (prediction.masked_select(mask) == trg_output.masked_select(mask)).long().sum().item()
 
-            if global_step >= 1000 and i % config['eval_freq'] == 0:
+            if i % config['eval_freq'] == 0:
                 train_wer = 1 - correct_tokens / total_tokens
                 train_ce_loss = total_ce_loss / total_tokens
                 train_kl_loss = total_kl_loss / total_samples
@@ -147,7 +147,7 @@ def train_vae(config: dict) -> None:
                 # total_ppl = dev_ppl + sample_ppl
                 # if total_ppl < min_total_ppl:
                 #     min_total_ppl = total_ppl
-                if dev_loss < min_dev_loss:
+                if global_step > 1000 and dev_loss < min_dev_loss:
                     min_dev_loss = dev_loss
                     corr_ce_loss = dev_ce_loss
                     corr_kl_loss = dev_kl_loss
