@@ -9,10 +9,9 @@ import numpy as np
 from src.model.text_vae import TextVAE
 from src.constants import PAD_INDEX, SOS, EOS
 from src.train.eval import eval_text_vae
-from src.gaussian_kldiv import GaussianKLDiv
-from src.train.sample_eval import sample_eval
+from src.utils.gaussian_kldiv import GaussianKLDiv
 
-def train_vae(config):
+def train_vae(config: dict) -> None:
 
     os.environ['CUDA_VISIBLE_DEVICES'] = str(config['gpu'])
 
@@ -21,9 +20,9 @@ def train_vae(config):
 
     base_path = config['base_path']
     save_path = os.path.join(base_path, 'vae.pkl')
+    language_model_path = os.path.join(base_path, 'language_model.pkl')
     vocab_path = os.path.join(base_path, 'vocab.pkl')
     embedding_path = os.path.join(base_path, 'embedding.npy')
-    glove_source_path = config['glove_source_path']
 
     config = config['vae']
 
@@ -42,8 +41,8 @@ def train_vae(config):
     TEXT.vocab = vocab
     vocab_size = len(vocab.itos)
     logger.info('vocab_size: %d' % vocab_size)
-    logger.info('load pretrained embedding')
-    embedding = np.load(embedding_path)
+
+    language_model = torch.load(language_model_path)
 
     logger.info('build data iterator')
     device = torch.device('cuda:0')
@@ -61,8 +60,7 @@ def train_vae(config):
         enc_dec_tying=config['enc_dec_tying'],
         dec_gen_tying=config['dec_gen_tying']
     )
-    model.encoder.embedding.weight.data.copy_(torch.tensor(embedding))
-    model.decoder.embedding.weight.data.copy_(torch.tensor(embedding))
+    model.load_pretrained_embeddings(path=embedding_path)
 
     logger.info('transfer model to GPU')
     model = model.to(device)
@@ -74,6 +72,7 @@ def train_vae(config):
 
     logger.info('start train')
 
+    # min_total_ppl = 1e9
     min_dev_loss = 1e9
     corr_ce_loss = 1e9
     corr_kl_loss = 1e9
@@ -139,11 +138,15 @@ def train_vae(config):
                 total_tokens = 0
                 total_samples = 0
 
-                dev_ce_loss, dev_kl_loss, dev_wer, sample_ppl = eval_text_vae(model, dev_iter)
+                dev_ce_loss, dev_kl_loss, dev_wer, sample_ppl = eval_text_vae(model, dev_iter, base_path, language_model=language_model)
                 logger.info('[epoch %2d step %4d]\ttrain_ce_loss: %.4f train_kl_loss: %.4f train_ppl: %.4f train_wer: %.4f dev_ce_loss: %.4f dev_kl_loss: %.4f dev_ppl: %.4f dev_wer: %.4f sample_ppl: %.4f'
                             % (epoch, i, train_ce_loss, train_kl_loss, 2 ** train_ce_loss, train_wer, dev_ce_loss, dev_kl_loss, 2 ** dev_ce_loss, dev_wer, sample_ppl))
 
                 dev_loss = dev_ce_loss + dev_kl_loss * coefficient
+                # dev_ppl = 2 ** dev_ce_loss
+                # total_ppl = dev_ppl + sample_ppl
+                # if total_ppl < min_total_ppl:
+                #     min_total_ppl = total_ppl
                 if dev_loss < min_dev_loss:
                     min_dev_loss = dev_loss
                     corr_ce_loss = dev_ce_loss
