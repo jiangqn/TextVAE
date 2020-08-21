@@ -28,6 +28,6 @@ def test_vae(config: dict) -> None:
 
     model = torch.load(save_path)
 
-    test_ce_loss, test_kl_loss, test_wer, sample_ppl = eval_text_vae(model, test_iter)
+    test_ce_loss, test_kl_loss, test_wer, sample_ppl = eval_text_vae(model, test_iter, base_path)
     print('test_ce_loss: %.4f\ttest_kl_loss: %.4f\ttest_ppl: %.4f\ttest_wer: %.4f\tsample_ppl: %.4f' %
           (test_ce_loss, test_kl_loss, 2 ** test_ce_loss, test_wer, sample_ppl))

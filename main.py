@@ -4,7 +4,8 @@ import yaml
 parser = argparse.ArgumentParser()
 parser.add_argument('--model', type=str, default='vae', choices=['vae', 'text_cnn', 'lm'])
 parser.add_argument('--task', type=str, default='train', choices=['train', 'test', 'vanilla_sample', 'get_features', 'correlation',
-        'visualize', 'pca_visualize', 'tsne_visualize', 'linear_separate', 'compute_projection_statistics', 'sentiment_sample', 'length_sample', 'depth_sample'])
+        'visualize', 'pca_visualize', 'tsne_visualize', 'linear_separate', 'compute_projection_statistics', 'sentiment_sample', 'length_sample', 'depth_sample',
+        'sentiment_transfer'])
 parser.add_argument('--gpu', type=int, default=0, choices=[i for i in range(8)])
 parser.add_argument('--config', type=str, default='config.yaml')
 
@@ -53,6 +54,9 @@ if args.model == 'vae':
     elif args.task == 'depth_sample':
         from src.sample.syntax_sample import syntax_sample
         syntax_sample(config, 'depth')
+    elif args.task == 'sentiment_transfer':
+        from src.transform.sentiment_transfer import sentiment_transfer
+        sentiment_transfer(config)
 elif args.model == 'lm':
     if args.task == 'train':
         from src.train.train_language_model import train_language_model

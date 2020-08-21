@@ -6,7 +6,7 @@ from sklearn.svm import LinearSVC
 from src.model.logistic_regression import LogisticRegressionClassifier
 import joblib
 
-def linear_separate(config):
+def linear_separate(config: dict) -> None:
 
     base_path = config['base_path']
     # sample_save_path = input('save path: ')
