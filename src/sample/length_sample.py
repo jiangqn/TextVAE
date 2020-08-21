@@ -6,6 +6,7 @@ from src.utils.multinomial_distribution import get_multinomial_distribution, sam
 from src.utils.encoding_transform import move_encoding
 from src.utils.sample_from_encoding import sample_from_encoding
 from src.get_features.get_length import get_length
+from src.utils import metric
 
 def length_sample(config: dict) -> None:
 
@@ -52,5 +53,6 @@ def length_sample(config: dict) -> None:
     sentences = sample_from_encoding(model, vocab, encoding, config['vae']['batch_size'])
     length = get_length(sentences)
 
-    accuracy = sum(int(x == y) for x, y in zip(length, target_length)) / len(length)
-    print('accuracy: %.4f' % accuracy)
+    print('accuracy: %.4f' % metric.accuracy(length, target_length))
+    print('rmse: %.4f' % metric.rmse(length, target_length))
+    print('diff: %.4f' % metric.diff(length, target_length))

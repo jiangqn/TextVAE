@@ -6,6 +6,7 @@ from src.utils.multinomial_distribution import get_multinomial_distribution, sam
 from src.utils.encoding_transform import move_encoding
 from src.utils.sample_from_encoding import sample_from_encoding
 from src.get_features.get_depth import get_depth
+from src.utils import metric
 
 def depth_sample(config: dict) -> None:
 
@@ -52,5 +53,6 @@ def depth_sample(config: dict) -> None:
     sentences = sample_from_encoding(model, vocab, encoding, config['vae']['batch_size'])
     depth = get_depth(sentences, processes=20)
 
-    accuracy = sum(int(x == y) for x, y in zip(depth, target_depth)) / len(depth)
-    print('accuracy: %.4f' % accuracy)
+    print('accuracy: %.4f' % metric.accuracy(depth, target_depth))
+    print('rmse: %.4f' % metric.rmse(depth, target_depth))
+    print('diff: %.4f' % metric.diff(depth, target_depth))

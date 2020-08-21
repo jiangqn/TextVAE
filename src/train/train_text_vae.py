@@ -111,7 +111,7 @@ def train_vae(config: dict) -> None:
 
             ce_loss = criterion(logit, trg_output)
             kl_loss = kldiv(mean, std)
-            coefficient = config['lambd'] * min(global_step, config['anneal_step']) / config['anneal_step']
+            coefficient = config['beta'] * min(global_step, config['anneal_step']) / config['anneal_step']
             loss = ce_loss + kl_loss * coefficient
             loss.backward()
             nn.utils.clip_grad_norm_(model.parameters(), config['clip_grad_norm'])
@@ -128,7 +128,7 @@ def train_vae(config: dict) -> None:
             prediction = logit.argmax(dim=-1)
             correct_tokens += (prediction.masked_select(mask) == trg_output.masked_select(mask)).long().sum().item()
 
-            if i % config['eval_freq'] == 0:
+            if global_step >= 1000 and i % config['eval_freq'] == 0:
                 train_wer = 1 - correct_tokens / total_tokens
                 train_ce_loss = total_ce_loss / total_tokens
                 train_kl_loss = total_kl_loss / total_samples
@@ -142,7 +142,7 @@ def train_vae(config: dict) -> None:
                 logger.info('[epoch %2d step %4d]\ttrain_ce_loss: %.4f train_kl_loss: %.4f train_ppl: %.4f train_wer: %.4f dev_ce_loss: %.4f dev_kl_loss: %.4f dev_ppl: %.4f dev_wer: %.4f sample_ppl: %.4f'
                             % (epoch, i, train_ce_loss, train_kl_loss, 2 ** train_ce_loss, train_wer, dev_ce_loss, dev_kl_loss, 2 ** dev_ce_loss, dev_wer, sample_ppl))
 
-                dev_loss = dev_ce_loss + dev_kl_loss * coefficient
+                dev_loss = dev_ce_loss + dev_kl_loss * config['lambd']
                 # dev_ppl = 2 ** dev_ce_loss
                 # total_ppl = dev_ppl + sample_ppl
                 # if total_ppl < min_total_ppl:
