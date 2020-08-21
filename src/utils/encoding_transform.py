@@ -37,3 +37,17 @@ def move(encoding: torch.Tensor, target_projection: torch.Tensor, direction: tor
     target_projection = target_projection.unsqueeze(-1)
     encoding = encoding + (target_projection - current_projection) * direction.transpose(0, 1)
     return encoding
+
+def move_encoding(encoding: torch.Tensor, target_projection: torch.Tensor, direction: torch.Tensor) -> torch.Tensor:
+    '''
+    :param encoding: torch.FloatTensor (num_layers, num, hidden_size)
+    :param target_projection: torch.FloatTensor (num,)
+    :param direction: torch.FloatTensor (encoding_size,) where encoding_size = num_layers * hidden_size
+    :return encoding: torch.FloatTensor (num_layers, num, hidden_size)
+    '''
+
+    num_layers, num, hidden_size = encoding.size()
+    encoding = encoding.transpose(0, 1).reshape(num, num_layers * hidden_size)
+    encoding = move(encoding, target_projection, direction)
+    encoding = encoding.reshape(num, num_layers, hidden_size).transpose(0, 1)
+    return encoding

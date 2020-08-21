@@ -1,6 +1,11 @@
 import pandas as pd
 from src.utils.sentence_depth import sentence_depth
 
+def read_field(path: str, field: str) -> list:
+    df = pd.read_csv(path, delimiter='\t')
+    assert field in df.columns.values.tolist()
+    return list(df[field])
+
 def read_prop(path, prop):
     assert prop in ['length', 'depth']
     if prop == 'length':

@@ -3,7 +3,7 @@ import yaml
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--model', type=str, default='vae', choices=['vae', 'text_cnn', 'lm'])
-parser.add_argument('--task', type=str, default='train', choices=['train', 'test', 'vanilla_sample', 'get_features', 'correlation',
+parser.add_argument('--task', type=str, default='train', choices=['preprocess', 'train', 'test', 'vanilla_sample', 'get_features', 'correlation',
         'visualize', 'pca_visualize', 'tsne_visualize', 'linear_separate', 'compute_projection_statistics', 'sentiment_sample', 'length_sample', 'depth_sample',
         'sentiment_transfer'])
 parser.add_argument('--gpu', type=int, default=0, choices=[i for i in range(8)])
@@ -14,7 +14,10 @@ args = parser.parse_args()
 config = yaml.safe_load(open(args.config, 'r', encoding='utf-8'))
 config['gpu'] = args.gpu
 
-if args.model == 'vae':
+if args.task == 'preprocess':
+    from src.train.preprocess import preprocess
+    preprocess(config)
+elif args.model == 'vae':
     if args.task == 'train':
         from src.train.train_text_vae import train_vae
         train_vae(config)

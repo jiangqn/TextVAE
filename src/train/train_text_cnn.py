@@ -5,13 +5,10 @@ from torchtext.data import TabularDataset, Iterator
 import os
 import logging
 import pickle
-import numpy as np
 from src.model.text_cnn import TextCNN
 from src.train.eval import eval_text_cnn
-from src.constants import PAD, UNK, SOS, EOS
-from src.utils.load_glove import load_glove
 
-def train_text_cnn(config: dict) -> dict:
+def train_text_cnn(config: dict) -> None:
 
     os.environ['CUDA_VISIBLE_DEVICES'] = str(config['gpu'])
 
@@ -22,7 +19,6 @@ def train_text_cnn(config: dict) -> dict:
     save_path = os.path.join(base_path, 'text_cnn.pkl')
     vocab_path = os.path.join(base_path, 'vocab.pkl')
     embedding_path = os.path.join(base_path, 'embedding.npy')
-    glove_source_path = config['glove_source_path']
 
     config = config['text_cnn']
 
@@ -40,20 +36,12 @@ def train_text_cnn(config: dict) -> dict:
     dev_data = TabularDataset(path=os.path.join(base_path, 'dev.tsv'),
         format='tsv', skip_header=True, fields=fields)
 
-    logger.info('build vocabulary')
-    TEXT.build_vocab(train_data, specials=[UNK, PAD, SOS, EOS])
-    vocab = TEXT.vocab
+    logger.info('load vocab')
+    with open(vocab_path, 'rb') as handle:
+        vocab = pickle.load(handle)
+    TEXT.vocab = vocab
     vocab_size = len(vocab.itos)
     logger.info('vocab_size: %d' % vocab_size)
-    logger.info('save vocabulary')
-    with open(vocab_path, 'wb') as handle:
-        pickle.dump(vocab, handle)
-    logger.info('load pretrained embedding')
-    if os.path.isfile(embedding_path):
-        embedding = np.load(embedding_path)
-    else:
-        embedding = load_glove(glove_source_path, vocab_size, vocab.stoi)
-        np.save(embedding_path, embedding)
 
     logger.info('build data iterator')
     device = torch.device('cuda:0')
@@ -69,7 +57,7 @@ def train_text_cnn(config: dict) -> dict:
         dropout=config['dropout'],
         num_categories=config['num_categories']
     )
-    model.load_pretrained_embeddings(embedding=embedding)
+    model.load_pretrained_embeddings(path=embedding_path)
     logger.info('transfer model to GPU')
     model = model.to(device)
 

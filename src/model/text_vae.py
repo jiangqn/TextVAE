@@ -122,7 +122,7 @@ class TextVAE(nn.Module):
                                    device=self.encoder.embedding.weight.device)
         else:
             encoding = kwargs['encoding']
-        max_len = kwargs.get('max_len', 20)
+        max_len = kwargs.get('max_len', 15)
         logit = self.decoder.decode(encoding, max_len)
         output = logit.argmax(dim=-1)
         return_list = [output]
