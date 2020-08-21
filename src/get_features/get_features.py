@@ -35,7 +35,7 @@ def get_features(config: dict) -> None:
     length = get_length(sentences)
 
     print('get depth')
-    depth = get_depth(sentences)
+    depth = get_depth(sentences, processes=20)
 
     df['sentiment'] = sentiment
     df['logppl'] = [math.log2(x) for x in ppl]

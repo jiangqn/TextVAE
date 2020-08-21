@@ -44,12 +44,12 @@ def evaluate_disentanglement(principal_directions):
     keys = list(principal_directions.keys())
     n_keys = len(keys)
     for i, key in enumerate([''] + keys):
-        print(key, end='\t' if i < n_keys else '\n')
+        print(key, end='\t\t' if i < n_keys else '\n')
     for key1 in keys:
-        print(key1, end='\t')
+        print(key1, end='\t\t')
         for j, key2 in enumerate(keys):
             cosine = float(principal_directions[key1].dot(principal_directions[key2]))
-            print('%.2f' % cosine, end='\t' if j < n_keys - 1 else '\n')
+            print('%.2f' % cosine, end='\t\t' if j < n_keys - 1 else '\n')
 
 def visualize(config):
 
@@ -90,7 +90,7 @@ def visualize(config):
         sign = 1 if corr >= 0 else -1
         v = v * sign
 
-        principal_directions[prop_name[0:6]] = v[:, 0]
+        principal_directions[prop_name] = v[:, 0]
 
         print('%s correlation: %.4f' % (prop_name, sign * corr))
 

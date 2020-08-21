@@ -21,7 +21,7 @@ def compute_projection_statistics(config: dict) -> None:
     with open(principal_directions_save_path, 'rb') as handle:
         principal_directions = pickle.load(handle)
 
-    sentiment_projection = encoding.dot(principal_directions['sentim'])
+    sentiment_projection = encoding.dot(principal_directions['sentiment'])
     length_projection = encoding.dot(principal_directions['length'])
     depth_projection = encoding.dot(principal_directions['depth'])
 

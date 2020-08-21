@@ -52,11 +52,15 @@ elif args.model == 'vae':
         from src.sample.sentiment_sample import sample_sentiment
         sample_sentiment(config)
     elif args.task == 'length_sample':
-        from src.sample.syntax_sample import syntax_sample
-        syntax_sample(config, 'length')
+        # from src.sample.syntax_sample import syntax_sample
+        # syntax_sample(config, 'length')
+        from src.sample.length_sample import length_sample
+        length_sample(config)
     elif args.task == 'depth_sample':
-        from src.sample.syntax_sample import syntax_sample
-        syntax_sample(config, 'depth')
+        # from src.sample.syntax_sample import syntax_sample
+        # syntax_sample(config, 'depth')
+        from src.sample.depth_sample import depth_sample
+        depth_sample(config)
     elif args.task == 'sentiment_transfer':
         from src.transform.sentiment_transfer import sentiment_transfer
         sentiment_transfer(config)

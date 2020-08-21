@@ -10,7 +10,7 @@ def vanilla_sample(config: dict) -> None:
     base_path = config['base_path']
 
     # sample_num = int(input('sample num: '))
-    sample_num = 10000
+    sample_num = 100000
     # sample_save_path = input('save path: ')
     sample_save_path = os.path.join(base_path, 'sample10000.tsv')
     # save_encoding = input('save_encoding: ') == 'True'
