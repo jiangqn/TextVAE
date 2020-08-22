@@ -10,7 +10,7 @@ from src.constants import SOS, EOS, PAD_INDEX
 
 def gradient_encoding(model: nn.Module, sentence: torch.Tensor, **kwargs) -> torch.Tensor:
 
-    lr = kwargs.get('lr', 0.1)
+    lr = kwargs.get('lr', 0.01)
     max_iter = kwargs.get('max_iter', 500)
 
     src = sentence[:, 1:]
@@ -22,7 +22,7 @@ def gradient_encoding(model: nn.Module, sentence: torch.Tensor, **kwargs) -> tor
     encoding, _ = model.encode(src)
     encoding = nn.Parameter(encoding)
 
-    optimizer = optim.Adam([encoding], lr=lr)
+    optimizer = optim.Adam([encoding], lr=lr, weight_decay=0.000001)
 
     criterion = nn.CrossEntropyLoss(ignore_index=PAD_INDEX)
 

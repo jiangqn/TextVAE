@@ -3,14 +3,6 @@ from typing import List, Tuple
 from collections import Counter
 from src.utils.multinomial_distribution import sample_from_multinomial_distribution
 
-# def rejection_sample(num, num_layers, hidden_size, model, label, device):
-#     encoding = torch.randn(size=(num_layers, num * 5, hidden_size), dtype=torch.float32, device=device)
-#     transformed_encoding = encoding.transpose(0, 1).reshape(num * 5, -1).cpu().numpy()
-#     pred_label = model.predict(transformed_encoding)
-#     index = torch.from_numpy(np.where(pred_label == label)[0]).to(device)
-#     encoding = encoding.index_select(dim=1, index=index)[:, 0:num, :]
-#     return encoding
-
 def rejection_sample(num_layers: int, num: int, hidden_size: int, classifier, label: int) -> torch.Tensor:
 
     encoding_bucket = []

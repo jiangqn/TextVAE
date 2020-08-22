@@ -6,7 +6,7 @@ import pickle
 
 def get_categorical_features(model: nn.Module, data_iter: Iterator, **kwargs) -> list:
 
-    output_category = kwargs.get('output_category', False)
+    output_category = kwargs.get('output_category', True)
     output_score = kwargs.get('output_score', False)
     assert output_category ^ output_score
 

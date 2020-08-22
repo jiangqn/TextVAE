@@ -11,7 +11,7 @@ def get_features(config: dict) -> None:
     base_path = config['base_path']
 
     # sample_save_path = input('save path: ')
-    sample_save_path = os.path.join(base_path, 'sample10000.tsv')
+    sample_save_path = os.path.join(base_path, 'sample100000.tsv')
     # encoding_save_path = '.'.join(sample_save_path.split('.')[0:-1]) + '.npy'
 
     os.environ['CUDA_VISIBLE_DEVICES'] = str(config['gpu'])

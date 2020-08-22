@@ -17,7 +17,7 @@ def depth_sample(config: dict) -> None:
     sample_num = 10000
 
     sample_save_path = os.path.join(base_path, 'depth_sample%d.tsv' % sample_num)
-    vanilla_sample_save_path = os.path.join(base_path, 'sample10000.tsv')
+    vanilla_sample_save_path = os.path.join(base_path, 'sample100000.tsv')
 
     vocab_path = os.path.join(base_path, 'vocab.pkl')
     principal_directions_save_path = os.path.join(base_path, 'principal_directions.pkl')

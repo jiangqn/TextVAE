@@ -12,7 +12,7 @@ def vanilla_sample(config: dict) -> None:
     # sample_num = int(input('sample num: '))
     sample_num = 100000
     # sample_save_path = input('save path: ')
-    sample_save_path = os.path.join(base_path, 'sample10000.tsv')
+    sample_save_path = os.path.join(base_path, 'sample%d.tsv' % sample_num)
     # save_encoding = input('save_encoding: ') == 'True'
     save_encoding = True
 

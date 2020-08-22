@@ -13,7 +13,8 @@ class TextCNN(nn.Module):
             nn.Conv1d(
                 in_channels=embed_size,
                 out_channels=kernel_num,
-                kernel_size=kernel_size
+                kernel_size=kernel_size,
+                padding=1
             ) for kernel_size in kernel_sizes
         )
         self.dropout = dropout
