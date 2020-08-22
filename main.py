@@ -5,7 +5,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--model', type=str, default='vae', choices=['vae', 'text_cnn', 'lm'])
 parser.add_argument('--task', type=str, default='train', choices=['preprocess', 'train', 'test', 'vanilla_sample', 'get_features', 'correlation',
         'visualize', 'pca_visualize', 'tsne_visualize', 'linear_separate', 'compute_projection_statistics', 'sentiment_sample', 'length_sample', 'depth_sample',
-        'sentiment_transfer'])
+        'test_vae_encoding', 'sentiment_transfer'])
 parser.add_argument('--gpu', type=int, default=0, choices=[i for i in range(8)])
 parser.add_argument('--config', type=str, default='config.yaml')
 
@@ -61,6 +61,9 @@ elif args.model == 'vae':
         # syntax_sample(config, 'depth')
         from src.sample.depth_sample import depth_sample
         depth_sample(config)
+    elif args.task == 'test_vae_encoding':
+        from src.train.test_vae_encoding import test_vae_encoding
+        test_vae_encoding(config)
     elif args.task == 'sentiment_transfer':
         from src.transform.sentiment_transfer import sentiment_transfer
         sentiment_transfer(config)

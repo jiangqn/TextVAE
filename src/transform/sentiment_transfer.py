@@ -1,6 +1,7 @@
 import os
 import torch
 import pickle
+from nltk.translate.bleu_score import sentence_bleu, corpus_bleu
 from src.utils.sentence_encoding import sentence_encoding_from_tsv
 from src.utils.sample_from_encoding import sample_from_encoding
 from src.utils.tsv_reader import read_field
@@ -19,7 +20,7 @@ def sentiment_transfer(config: dict) -> None:
     model_path = os.path.join(base_path, 'vae.pkl')
 
     model = torch.load(model_path)
-    encoding = sentence_encoding_from_tsv(test_path, model=model_path)
+    encoding = sentence_encoding_from_tsv(test_path, model_path=model_path, encoding_type='gradient')
 
     device = model.encoder.embedding.weight.device
 
@@ -29,7 +30,7 @@ def sentiment_transfer(config: dict) -> None:
     with open(principal_directions_save_path, 'rb') as handle:
         principal_directions = pickle.load(handle)
 
-    direction = torch.from_numpy(principal_directions['sentim']).float().to(device)
+    direction = torch.from_numpy(principal_directions['sentiment']).float().to(device)
 
     with open(projection_statistics_save_path, 'rb') as handle:
         projection_statistics = pickle.load(handle)
@@ -47,10 +48,7 @@ def sentiment_transfer(config: dict) -> None:
 
     transferred_sentences = sample_from_encoding(model, vocab, encoding, config['vae']['batch_size'])
 
-    for i, (o, r, t) in enumerate(zip(original_sentences, reconstructed_sentences, transferred_sentences)):
-        if i < 50:
-            print(i)
-            print(o)
-            print(r)
-            print(t)
-            print('')
+    hypothesis = [sentence.split() for sentence in transferred_sentences]
+    references = [[sentence.split()] for sentence in original_sentences]
+
+    print('bleu: %.4f' % corpus_bleu(references, hypothesis))

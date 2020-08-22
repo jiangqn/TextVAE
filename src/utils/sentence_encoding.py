@@ -10,8 +10,8 @@ from src.constants import SOS, EOS, PAD_INDEX
 
 def gradient_encoding(model: nn.Module, sentence: torch.Tensor, **kwargs) -> torch.Tensor:
 
-    lr = kwargs.get('lr', 0.001)
-    max_iter = kwargs.get('max_iter', 1000)
+    lr = kwargs.get('lr', 0.1)
+    max_iter = kwargs.get('max_iter', 500)
 
     src = sentence[:, 1:]
     trg_input = sentence
@@ -19,17 +19,16 @@ def gradient_encoding(model: nn.Module, sentence: torch.Tensor, **kwargs) -> tor
     pad = torch.zeros(size=(batch_size, 1), dtype=torch.long, device=sentence.device)
     trg_output = torch.cat((sentence[:, 1:], pad), dim=-1)
 
-    encoding = model.encode(src)
+    encoding, _ = model.encode(src)
     encoding = nn.Parameter(encoding)
 
     optimizer = optim.Adam([encoding], lr=lr)
 
     criterion = nn.CrossEntropyLoss(ignore_index=PAD_INDEX)
 
-    model.train()
-
     min_loss = 1e9
     best_encoding = encoding.data
+    best_i = 0
 
     for i in range(max_iter):
 
@@ -45,13 +44,41 @@ def gradient_encoding(model: nn.Module, sentence: torch.Tensor, **kwargs) -> tor
 
         optimizer.step()
 
+        # print(i, loss.item())
+
         if loss.item() < min_loss:
             min_loss = loss.item()
             best_encoding = encoding.data
+            best_i = i
+
+    # print(best_i)
+
+    # raise ValueError('debug')
 
     return best_encoding
 
-def sentence_encoding(model: nn.Module, data_iter: Iterator, probabilistic_encoding: bool = False) -> torch.Tensor:
+def sentence_encoding(model: nn.Module, sentence: torch.Tensor, **kwargs) -> torch.Tensor:
+    '''
+    :param model: vae nn.Module
+    :param sentence: torch.LongTensor (batch_size, seq_len)
+    :param kwargs:
+    :return encoding: torch.FloatTensor (num_layers, batch_size, hidden_size)
+    '''
+
+    encoding_type = kwargs.get('encoding_type', 'deterministic')
+    assert encoding_type in ['deterministic', 'probabilistic', 'gradient']
+
+    src = sentence[:, 1:]
+
+    if encoding_type == 'deterministic':
+        encoding, _ = model.encode(src)
+    elif encoding_type == 'probabilistic':
+        encoding, _, _ = model.probabilistic_encode(src)
+    else:   # gradient
+        encoding = gradient_encoding(model, sentence, **kwargs)
+    return encoding
+
+def sentence_encoding_from_iterator(model: nn.Module, data_iter: Iterator, **kwargs) -> torch.Tensor:
     '''
     :param model: vae nn.Module
     :param data_iter:
@@ -63,20 +90,8 @@ def sentence_encoding(model: nn.Module, data_iter: Iterator, probabilistic_encod
 
     model.eval()
 
-    with torch.no_grad():
-
-        for batch in data_iter:
-
-            sentence = batch.sentence
-            src = sentence[:, 1:]
-
-            if probabilistic_encoding:
-                batch_encoding, _, _ = model.probabilistic_encode(src)
-            else:
-                batch_encoding, _ = model.encode(src)
-
-            # batch_encoding = batch_encoding.cpu().numpy()
-            encoding.append(batch_encoding)
+    for batch in data_iter:
+        encoding.append(sentence_encoding(model, batch.sentence, **kwargs))
 
     encoding = torch.cat(encoding, dim=1)
     return encoding
@@ -105,6 +120,4 @@ def sentence_encoding_from_tsv(file_path: str, **kwargs) -> torch.Tensor:
     batch_size = kwargs.get('batch_size', 64)
     data_iter = Iterator(dataset, batch_size=batch_size, shuffle=False, device=device)
 
-    probabilistic_encoding = kwargs.get('probabilistic_encoding', False)
-
-    return sentence_encoding(model, data_iter, probabilistic_encoding=probabilistic_encoding)
+    return sentence_encoding_from_iterator(model, data_iter, **kwargs)
