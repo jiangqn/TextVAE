@@ -4,7 +4,7 @@ import yaml
 parser = argparse.ArgumentParser()
 parser.add_argument('--model', type=str, default='vae', choices=['vae', 'text_cnn', 'lm'])
 parser.add_argument('--task', type=str, default='train', choices=['preprocess', 'train', 'test', 'vanilla_sample', 'get_features', 'correlation',
-        'visualize', 'pca_visualize', 'tsne_visualize', 'linear_separate', 'compute_projection_statistics', 'sentiment_sample', 'length_sample', 'depth_sample',
+        'visualize', 'pca_visualize', 'tsne_visualize', 'linear_separate', 'categorical_sample', 'compute_projection_statistics', 'sentiment_sample', 'length_sample', 'depth_sample',
         'test_vae_encoding', 'sentiment_transfer'])
 parser.add_argument('--gpu', type=int, default=0, choices=[i for i in range(8)])
 parser.add_argument('--config', type=str, default='config.yaml')
@@ -45,6 +45,9 @@ elif args.model == 'vae':
     elif args.task == 'linear_separate':
         from src.utils.linear_separate import linear_separate
         linear_separate(config)
+    elif args.task == 'categorical_sample':
+        from src.sample.categorical_sample import categorical_sample
+        categorical_sample(config)
     elif args.task == 'compute_projection_statistics':
         from src.utils.compute_projection_statistics import compute_projection_statistics
         compute_projection_statistics(config)

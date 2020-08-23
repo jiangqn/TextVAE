@@ -1,4 +1,5 @@
 import math
+import numpy as np
 from typing import List
 
 def mean(X: list) -> float:
@@ -13,3 +14,8 @@ def rmse(X: list, Y: list) -> float:
 
 def diff(X: list, Y: list) -> float:
     return mean([abs(x - y) for x, y in zip(X, Y)])
+
+def correlation(X: list, Y: list) -> float:
+    X = np.asarray(X).astype(np.float32)
+    Y = np.asarray(Y).astype(np.float32)
+    return float(np.corrcoef(X, Y)[0, 1])

@@ -28,7 +28,7 @@ vae:
   hidden_size: 300
   num_layers: 1
   dropout: 0.4
-  word_dropout: 0.1
+  word_dropout: 0.5
   enc_dec_tying: False
   dec_gen_tying: True
   batch_size: 64
@@ -40,9 +40,15 @@ vae:
   eval_freq: 100
   clip_grad_norm: 5.0
   anneal_step: 500
+vanilla_sample:
+  sample_num: 100000
+  save_encoding: True
+categorical_sample:
+  sample_num: 10000
+  save_encoding: False
 length_sample:
-  scope: 2
-  intervals: 10
+  sample_num: 10000
+  save_encoding: False
 depth_sample:
-  scope: 2
-  intervals: 10
+  sample_num: 10000
+  save_encoding: False

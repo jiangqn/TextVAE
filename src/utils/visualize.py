@@ -1,44 +1,11 @@
 import torch
-from torch import nn, optim
-from copy import deepcopy
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from sklearn.cross_decomposition import CCA
 import os
 import pickle
-
-class Solver(nn.Module):
-
-    def __init__(self, m, lambd=-1, mu=-1):
-        super(Solver, self).__init__()
-        self.u = nn.Parameter(torch.rand(m, 1))
-        self.lambd = lambd
-        self.mu = mu
-        self.solution = None
-
-    def forward(self, A, v):
-        return - (self.u.t().matmul(A).matmul(self.u)[0, 0] + self.lambd * torch.abs(self.u.t().matmul(self.u) - 1) + self.mu * torch.abs(self.u.t().matmul(v)))
-
-def solve(m, A, v):
-
-    solver = Solver(m, -10, -10)
-
-    optimizer = optim.SGD(solver.parameters(), lr=0.0003, momentum=0.9)
-
-    n_step = 10000
-
-    min_loss = 1e9
-    for i in range(n_step):
-        optimizer.zero_grad()
-        loss = solver(A, v)
-        loss.backward()
-        if i % 10 == 0:
-            if loss.item() < min_loss:
-                min_loss = loss.item()
-                solver.solution = deepcopy(solver.u.data)
-        optimizer.step()
-    return solver.solution
+from src.utils.constraint_max_variance_direction_solver import solve
 
 def evaluate_disentanglement(principal_directions):
     keys = list(principal_directions.keys())
@@ -51,18 +18,20 @@ def evaluate_disentanglement(principal_directions):
             cosine = float(principal_directions[key1].dot(principal_directions[key2]))
             print('%.2f' % cosine, end='\t\t' if j < n_keys - 1 else '\n')
 
-def visualize(config):
+def visualize(config: dict) -> None:
+
+    os.environ['CUDA_VISIBLE_DEVICES'] = str(config['gpu'])
 
     base_path = config['base_path']
-
-    sample_save_path = os.path.join(base_path, 'sample100000.tsv')
-    encoding_save_path = '.'.join(sample_save_path.split('.')[0:-1]) + '.npy'
+    vanilla_sample_num = config['vanilla_sample']['sample_num']
+    vanilla_sample_save_path = os.path.join(base_path, 'vanilla_sample_%d.tsv' % vanilla_sample_num)
+    encoding_save_path = '.'.join(vanilla_sample_save_path.split('.')[0:-1]) + '.npy'
     principal_directions_save_path = os.path.join(base_path, 'principal_directions.pkl')
 
     encoding = np.load(encoding_save_path)
-    n, m = encoding.shape
+    num, encoding_size = encoding.shape
 
-    df = pd.read_csv(sample_save_path, delimiter='\t')
+    df = pd.read_csv(vanilla_sample_save_path, delimiter='\t')
 
     encoding_mean = encoding.mean(axis=0)[np.newaxis, :]
     encoding_std = encoding.std(axis=0)[np.newaxis, :]
@@ -84,8 +53,8 @@ def visualize(config):
 
         corr = np.corrcoef(c_encoding[:, 0], c_prop)[0, 1]
 
-        A = encoding.transpose().dot(encoding) / n
-        u = solve(m, torch.tensor(A).float(), torch.tensor(v).float()).numpy().astype(np.float64)
+        A = encoding.transpose().dot(encoding) / num
+        u = solve(encoding_size, torch.tensor(A).float(), torch.tensor(v).float()).numpy().astype(np.float64)
 
         sign = 1 if corr >= 0 else -1
         v = v * sign
@@ -93,6 +62,8 @@ def visualize(config):
         principal_directions[prop_name] = v[:, 0]
 
         print('%s correlation: %.4f' % (prop_name, sign * corr))
+        angle = (np.arccos(np.abs(v[:, 0])) / np.pi * 180).min()
+        print('angle: %.4f' % angle)
 
         x = encoding.dot(v)[:, 0]
         y = encoding.dot(u)[:, 0]

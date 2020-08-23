@@ -14,7 +14,7 @@ class TextCNN(nn.Module):
                 in_channels=embed_size,
                 out_channels=kernel_num,
                 kernel_size=kernel_size,
-                padding=1
+                padding=kernel_size // 2
             ) for kernel_size in kernel_sizes
         )
         self.dropout = dropout

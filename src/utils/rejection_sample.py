@@ -40,6 +40,6 @@ def multinomial_rejection_sample(num_layers: int, sample_num: int, hidden_size: 
     encoding = torch.cat(encoding, dim=1)
     sample = torch.tensor(sample)
     index = torch.randperm(sample_num)
-    encoding = encoding[index]
+    encoding = encoding[:, index, :]
     sample = sample[index]
     return sample, encoding

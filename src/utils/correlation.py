@@ -2,22 +2,52 @@ import os
 import numpy as np
 import pandas as pd
 from sklearn.cross_decomposition import CCA
+import pickle
 
 def correlation(config):
 
+    os.environ['CUDA_VISIBLE_DEVICES'] = str(config['gpu'])
+
     base_path = config['base_path']
-    # sample_save_path = input('save path: ')
-    sample_save_path = os.path.join(base_path, 'sample10000.tsv')
-    encoding_save_path = '.'.join(sample_save_path.split('.')[0:-1]) + '.npy'
+    vanilla_sample_num = config['vanilla_sample']['sample_num']
+    vanilla_sample_save_path = os.path.join(base_path, 'vanilla_sample_%d.tsv' % vanilla_sample_num)
+    encoding_save_path = '.'.join(vanilla_sample_save_path.split('.')[0:-1]) + '.npy'
+    principal_directions_save_path = os.path.join(base_path, 'principal_directions.pkl')
 
     encoding = np.load(encoding_save_path)
-    df = pd.read_csv(sample_save_path, delimiter='\t')
+    df = pd.read_csv(vanilla_sample_save_path, delimiter='\t')
 
-    prop_names = df.columns.values[2:]
+    encoding_mean = encoding.mean(axis=0)[np.newaxis, :]
+    encoding_std = encoding.std(axis=0)[np.newaxis, :]
+    encoding = (encoding - encoding_mean) / encoding_std
 
-    for prop_name in prop_names:
-        cca = CCA(n_components=1)
+    prop_names = ['length', 'depth']
+
+    principal_directions = {}
+
+    for i, prop_name in enumerate(prop_names):
+
         prop = np.asarray(df[prop_name]).astype(np.float32)[:, np.newaxis]
-        u, v = cca.fit_transform(encoding, prop)
-        corr = abs(float(np.corrcoef(u[:, 0], v)[0, 1]))
-        print('%s correlation: %.4f' % (prop_name, corr))
+
+        cca = CCA(n_components=1)
+        c_encoding, c_prop = cca.fit_transform(encoding, prop)
+        v = cca.x_rotations_
+
+        corr = np.corrcoef(c_encoding[:, 0], c_prop)[0, 1]
+        sign = 1 if corr >= 0 else -1
+
+        v = v * sign
+
+        principal_directions[prop_name] = v[:, 0]
+
+        print('%s:' % prop_name)
+        print('correlation: %.4f' % (sign * corr))
+        angle = (np.arccos(np.abs(v[:, 0])) / np.pi * 180).min()
+        print('angle between main direction and main dimension: %.4f' % angle)
+        main_dimension = np.argmax(np.abs(v[:, 0]))
+        main_dimension_corr = np.abs(np.corrcoef(encoding[:, main_dimension], c_prop)[0, 1])
+        print('main dimension correlation: %.4f' % main_dimension_corr)
+        print('')
+
+    with open(principal_directions_save_path, 'wb') as handle:
+        pickle.dump(principal_directions, handle)
