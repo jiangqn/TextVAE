@@ -5,12 +5,15 @@ from torch import optim
 from torchtext import data
 from torchtext.data import TabularDataset, Iterator
 import numpy as np
+import math
 import pickle
 from src.constants import SOS, EOS, PAD_INDEX
+from src.utils.gaussian_kldiv import GaussianKLDiv
 
 def gradient_encoding(model: nn.Module, sentence: torch.Tensor, **kwargs) -> torch.Tensor:
 
     lr = kwargs.get('lr', 0.01)
+    weight_deacy = kwargs.get('weight_decay', 0)
     max_iter = kwargs.get('max_iter', 500)
 
     src = sentence[:, 1:]
@@ -22,9 +25,10 @@ def gradient_encoding(model: nn.Module, sentence: torch.Tensor, **kwargs) -> tor
     encoding, _ = model.encode(src)
     encoding = nn.Parameter(encoding)
 
-    optimizer = optim.Adam([encoding], lr=lr, weight_decay=0.000001)
+    optimizer = optim.Adam([encoding], lr=lr, weight_decay=weight_deacy)
 
     criterion = nn.CrossEntropyLoss(ignore_index=PAD_INDEX)
+    kldiv =GaussianKLDiv()
 
     min_loss = 1e9
     best_encoding = encoding.data
@@ -39,19 +43,26 @@ def gradient_encoding(model: nn.Module, sentence: torch.Tensor, **kwargs) -> tor
         output_size = logit.size(-1)
         logit = logit.view(-1, output_size)
 
-        loss = criterion(logit, trg_output)
+        std = torch.zeros_like(encoding, device=encoding.device)
+        nn.init.constant_(std, 1)
+        norm = (encoding * encoding).sum(dim=0).sum(dim=-1).sqrt().mean()
+
+        rec_loss = criterion(logit, trg_output)
+        kl_loss = kldiv(encoding, std)
+        loss = rec_loss + 0.04 * kl_loss
         loss.backward()
 
         optimizer.step()
 
-        # print(i, loss.item())
+        logprob = - ((math.log(2 * math.pi) + encoding * encoding) / 2).sum(dim=0).sum(dim=-1).mean().item()
+        print('%d\t%.4f\t%.4f\t%.4f\t%.4f' % (i, rec_loss.item(), kl_loss.item(), norm.item(), logprob))
 
         if loss.item() < min_loss:
             min_loss = loss.item()
             best_encoding = encoding.data
             best_i = i
 
-    # print(best_i)
+    print(best_i)
 
     # raise ValueError('debug')
 

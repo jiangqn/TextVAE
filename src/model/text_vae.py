@@ -32,7 +32,7 @@ class TextVAE(nn.Module):
         )
         self.word_dropout = word_dropout
         if enc_dec_tying:
-            self.decoder.embedding.weight = self.encoder.embedding.weight
+            self.encoder.embedding.weight = self.decoder.embedding.weight
         self.mean_projection = nn.Linear(2 * hidden_size, hidden_size)
         self.std_projection = nn.Linear(2 * hidden_size, hidden_size)
 

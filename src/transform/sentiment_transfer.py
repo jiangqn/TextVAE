@@ -27,7 +27,7 @@ def sentiment_transfer(config: dict) -> None:
     language_model_path = os.path.join(base_path, 'language_model.pkl')
 
     model = torch.load(model_path)
-    encoding = sentence_encoding_from_tsv(test_path, model_path=model_path, encoding_type='gradient', batch_size=1000)
+    encoding = sentence_encoding_from_tsv(test_path, model_path=model_path, encoding_type='deterministic', batch_size=64)
 
     device = model.encoder.embedding.weight.device
 
@@ -66,7 +66,8 @@ def sentiment_transfer(config: dict) -> None:
         writer = csv.writer(f, delimiter='\t')
         writer.writerows(transferred_data)
 
-    transferred_label = get_categorical_features_from_tsv(output_save_path, config['text_cnn']['batch_size'], model_path=text_cnn_path, vocab=vocab)
+    transferred_label = get_categorical_features_from_tsv(output_save_path, config['text_cnn']['batch_size'],
+                    model_path=text_cnn_path, vocab=vocab, output_category=True)
     transferred_ppl = get_ppl_from_tsv(output_save_path, config['language_model']['batch_size'], model_path=language_model_path, vocab=vocab)
 
     print('transfer_accuracy: %.4f' % metric.accuracy(transferred_label, target_label))

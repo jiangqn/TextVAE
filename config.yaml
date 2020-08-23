@@ -28,7 +28,7 @@ vae:
   hidden_size: 300
   num_layers: 1
   dropout: 0.4
-  word_dropout: 0.5
+  word_dropout: 0.1
   enc_dec_tying: False
   dec_gen_tying: True
   batch_size: 64
