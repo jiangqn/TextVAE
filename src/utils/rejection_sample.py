@@ -12,8 +12,10 @@ def rejection_sample(num_layers: int, num: int, hidden_size: int, classifier, la
     while current_num < num:
         encoding = torch.randn(size=(num_layers, batch_size, hidden_size), dtype=torch.float32)
         transformed_encoding = encoding.transpose(0, 1).reshape(batch_size, num_layers * hidden_size).cpu().numpy()
-        prediction = torch.from_numpy(classifier.predict(transformed_encoding)).long()
-        index = torch.where(prediction == label)[0]
+        prediction, confidience = classifier.predict(transformed_encoding, output_probability=True)
+        prediction = torch.from_numpy(prediction).long()
+        confidience = torch.from_numpy(confidience).float()
+        index = torch.where((prediction == label) & (confidience >= 0.9))[0]
         encoding = encoding.index_select(dim=1, index=index)
         valid_num = min(num - current_num, encoding.size(1))
         encoding_bucket.append(encoding[:, 0:valid_num:, :])
