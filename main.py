@@ -7,7 +7,7 @@ parser.add_argument('--task', type=str, default='train', choices=['preprocess', 
         'visualize', 'pca_visualize', 'tsne_visualize', 'linear_separate', 'categorical_sample', 'compute_projection_statistics', 'sentiment_sample', 'length_sample', 'depth_sample',
         'test_vae_encoding', 'sentiment_transfer'])
 parser.add_argument('--gpu', type=int, default=0, choices=[i for i in range(8)])
-parser.add_argument('--config', type=str, default='config.yaml')
+parser.add_argument('--config', type=str, default='amazon_config.yaml')
 
 args = parser.parse_args()
 

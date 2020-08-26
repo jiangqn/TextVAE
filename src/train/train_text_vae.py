@@ -24,6 +24,8 @@ def train_vae(config: dict) -> None:
     vocab_path = os.path.join(base_path, 'vocab.pkl')
     embedding_path = os.path.join(base_path, 'embedding.npy')
 
+    max_len = config['max_len']
+
     config = config['vae']
 
     logger.info('build dataset')
@@ -138,7 +140,7 @@ def train_vae(config: dict) -> None:
                 total_tokens = 0
                 total_samples = 0
 
-                dev_ce_loss, dev_kl_loss, dev_wer, sample_ppl = eval_text_vae(model, dev_iter, base_path, language_model=language_model)
+                dev_ce_loss, dev_kl_loss, dev_wer, sample_ppl = eval_text_vae(model, dev_iter, base_path, language_model=language_model, max_len=max_len)
                 logger.info('[epoch %2d step %4d]\ttrain_ce_loss: %.4f train_kl_loss: %.4f train_ppl: %.4f train_wer: %.4f dev_ce_loss: %.4f dev_kl_loss: %.4f dev_ppl: %.4f dev_wer: %.4f sample_ppl: %.4f'
                             % (epoch, i, train_ce_loss, train_kl_loss, 2 ** train_ce_loss, train_wer, dev_ce_loss, dev_kl_loss, 2 ** dev_ce_loss, dev_wer, sample_ppl))
 

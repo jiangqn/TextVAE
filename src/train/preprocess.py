@@ -24,7 +24,7 @@ def preprocess(config: dict) -> None:
                                 format='tsv', skip_header=True, fields=fields)
 
     logger.info('build vocabulary')
-    TEXT.build_vocab(train_data, specials=[UNK, PAD, SOS, EOS])
+    TEXT.build_vocab(train_data, specials=[UNK, PAD, SOS, EOS], max_size=30000)
     vocab = TEXT.vocab
     vocab_size = len(vocab.itos)
     logger.info('vocab_size: %d' % vocab_size)

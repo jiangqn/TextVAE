@@ -23,7 +23,7 @@ class LinearSVM(nn.Module):
 
 class LinearSVMClassifier(object):
 
-    def __init__(self, lr: float = 0.001, batch_size: int = 64, weight_decay: float = 0.01, max_epoches: int = 10, max_patience: int = 10) -> None:
+    def __init__(self, lr: float = 0.001, batch_size: int = 64, weight_decay: float = 0.001, max_epoches: int = 10, max_patience: int = 10) -> None:
         super(LinearSVMClassifier, self).__init__()
         self.lr = lr
         self.batch_size = batch_size

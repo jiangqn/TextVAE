@@ -18,7 +18,7 @@ def linear_separate(config: dict) -> None:
     encoding = np.load(encoding_save_path)
 
     label = np.asarray(read_field(vanilla_sample_save_path, 'label'))
-    model = LinearSVMClassifier(max_epoches=100)
+    model = LogisticRegressionClassifier(max_epoches=100)
     model.fit(encoding, label)
     predition = model.predict(encoding)
     accuracy = (predition == label).astype(np.float32).mean()

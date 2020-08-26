@@ -53,7 +53,7 @@ def length_sample(config: dict) -> None:
     encoding = torch.randn(size=(num_layers, length_sample_num, hidden_size), device=device)
     encoding = move_encoding(encoding, target_projection, direction)
 
-    sentences = sample_from_encoding(model, vocab, encoding, config['vae']['batch_size'])
+    sentences = sample_from_encoding(model, vocab, encoding, config['max_len'], config['vae']['batch_size'])
     length = get_length(sentences)
 
     sentences = ['sentence'] + sentences

@@ -21,7 +21,7 @@ def sample_eval_by_language_model(model, base_path, sample_num=1000, batch_size=
     sentences = ['sentence']
 
     for batch_size in batch_sizes:
-        output = model.sample(num=batch_size)
+        output = model.sample(num=batch_size, max_len=kwargs['max_len'])
         sentences.extend(convert_tensor_to_texts(output, vocab))
 
     sentences = [[sentence] for sentence in sentences]

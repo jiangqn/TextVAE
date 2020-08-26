@@ -31,7 +31,7 @@ def test_vae_encoding(config: dict) -> None:
     model = torch.load(save_path)
 
     test_encoding = sentence_encoding_from_iterator(model, test_iter, encoding_type='gradient')
-    reconstructed_sentences = sample_from_encoding(model, vocab, test_encoding, config['vae']['batch_size'])
+    reconstructed_sentences = sample_from_encoding(model, vocab, test_encoding, config['max_len'], config['vae']['batch_size'])
 
     original_sentences = read_field(test_path, 'sentence')
 

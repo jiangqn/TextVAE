@@ -53,7 +53,7 @@ def sentiment_transfer(config: dict) -> None:
 
     transferred_encoding = move_encoding(encoding, target_projection, direction)
 
-    transferred_sentences = sample_from_encoding(model, vocab, transferred_encoding, config['vae']['batch_size'])
+    transferred_sentences = sample_from_encoding(model, vocab, transferred_encoding, config['max_len'], config['vae']['batch_size'])
 
     references = read_field(test_path, 'reference')
     references = [[sentence.split()] for sentence in references]

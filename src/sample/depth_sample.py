@@ -53,7 +53,7 @@ def depth_sample(config: dict) -> None:
     encoding = torch.randn(size=(num_layers, depth_sample_num, hidden_size), device=device)
     encoding = move_encoding(encoding, target_projection, direction)
 
-    sentences = sample_from_encoding(model, vocab, encoding, config['vae']['batch_size'])
+    sentences = sample_from_encoding(model, vocab, encoding, config['max_len'], config['vae']['batch_size'])
     depth = get_depth(sentences, processes=20)
 
     sentences = ['sentence'] + sentences

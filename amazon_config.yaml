@@ -1,0 +1,55 @@
+base_path: data/amazon
+glove_source_path: /home/jiangqn/datasets/embeddings/glove.840B.300d.txt
+max_len: 15
+text_cnn:
+  embed_size: 300
+  kernel_sizes: [3, 4, 5]
+  kernel_num: 100
+  dropout: 0.5
+  num_categories: 4
+  batch_size: 64
+  lr: 0.001
+  weight_decay: 0
+  epoches: 2
+  eval_freq: 100
+language_model:
+  embed_size: 300
+  hidden_size: 300
+  num_layers: 2
+  dropout: 0.3
+  weight_tying: False
+  batch_size: 64
+  lr: 0.001
+  weight_decay: 0
+  epoches: 5
+  eval_freq: 100
+  clip_grad_norm: 5.0
+vae:
+  embed_size: 300
+  hidden_size: 300
+  num_layers: 1
+  dropout: 0.4
+  word_dropout: 0.5
+  enc_dec_tying: True
+  dec_gen_tying: True
+  batch_size: 64
+  beta: 0.04
+  lambd: 0.05
+  lr: 0.001
+  weight_decay: 0
+  epoches: 1
+  eval_freq: 100
+  clip_grad_norm: 5.0
+  anneal_step: 500
+vanilla_sample:
+  sample_num: 100000
+  save_encoding: True
+categorical_sample:
+  sample_num: 10000
+  save_encoding: False
+length_sample:
+  sample_num: 10000
+  save_encoding: False
+depth_sample:
+  sample_num: 10000
+  save_encoding: False

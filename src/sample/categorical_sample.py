@@ -44,7 +44,7 @@ def categorical_sample(config: dict) -> None:
     device = model.encoder.embedding.weight.device
     encoding = encoding.to(device)
 
-    sentences = ['sentence'] + sample_from_encoding(model, vocab, encoding, config['vae']['batch_size'])
+    sentences = ['sentence'] + sample_from_encoding(model, vocab, encoding, config['max_len'], config['vae']['batch_size'])
 
     sentences = [[sentence] for sentence in sentences]
     if save_encoding:
