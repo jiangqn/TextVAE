@@ -1,18 +1,22 @@
 import argparse
 import yaml
+import os
+from src.utils.set_seed import set_seed
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--model', type=str, default='vae', choices=['vae', 'text_cnn', 'lm'])
 parser.add_argument('--task', type=str, default='train', choices=['preprocess', 'train', 'test', 'vanilla_sample', 'get_features', 'correlation',
         'visualize', 'pca_visualize', 'tsne_visualize', 'linear_separate', 'categorical_sample', 'compute_projection_statistics', 'sentiment_sample', 'length_sample', 'depth_sample',
-        'test_vae_encoding', 'sentiment_transfer'])
+        'test_vae_encoding', 'sentiment_transfer', 'eval_reverse_ppl'])
 parser.add_argument('--gpu', type=int, default=0, choices=[i for i in range(8)])
-parser.add_argument('--config', type=str, default='amazon_config.yaml')
+parser.add_argument('--config', type=str, default='yelp_config.yaml')
 
 args = parser.parse_args()
 
 config = yaml.safe_load(open(args.config, 'r', encoding='utf-8'))
 config['gpu'] = args.gpu
+
+set_seed(config['seed'])
 
 if args.task == 'preprocess':
     from src.train.preprocess import preprocess
@@ -51,9 +55,6 @@ elif args.model == 'vae':
     elif args.task == 'compute_projection_statistics':
         from src.utils.compute_projection_statistics import compute_projection_statistics
         compute_projection_statistics(config)
-    elif args.task == 'sentiment_sample':
-        from src.sample.sentiment_sample import sample_sentiment
-        sample_sentiment(config)
     elif args.task == 'length_sample':
         # from src.sample.syntax_sample import syntax_sample
         # syntax_sample(config, 'length')
@@ -67,9 +68,10 @@ elif args.model == 'vae':
     elif args.task == 'test_vae_encoding':
         from src.train.test_vae_encoding import test_vae_encoding
         test_vae_encoding(config)
-    elif args.task == 'sentiment_transfer':
-        from src.transform.sentiment_transfer import sentiment_transfer
-        sentiment_transfer(config)
+    elif args.task == 'eval_reverse_ppl':
+        from src.train.eval_reverse_ppl import eval_reverse_ppl
+        path = os.path.join(config['base_path'], 'vanilla_sample_100000.npy')
+        eval_reverse_ppl(config)
 elif args.model == 'lm':
     if args.task == 'train':
         from src.train.train_language_model import train_language_model

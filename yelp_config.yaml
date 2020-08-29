@@ -1,3 +1,4 @@
+seed: 42
 base_path: data/yelp
 glove_source_path: /home/jiangqn/datasets/embeddings/glove.840B.300d.txt
 max_len: 15
@@ -15,7 +16,7 @@ text_cnn:
 language_model:
   embed_size: 300
   hidden_size: 300
-  num_layers: 2
+  num_layers: 1
   dropout: 0.3
   weight_tying: False
   batch_size: 64
@@ -45,7 +46,7 @@ vanilla_sample:
   sample_num: 100000
   save_encoding: True
 categorical_sample:
-  sample_num: 10000
+  sample_num: 100000
   save_encoding: False
 length_sample:
   sample_num: 10000

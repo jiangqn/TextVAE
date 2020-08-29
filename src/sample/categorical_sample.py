@@ -10,6 +10,7 @@ from src.utils.sample_from_encoding import sample_from_encoding
 from src.get_features.get_category import get_categorical_features_from_tsv
 from src.get_features.get_ppl import get_ppl_from_tsv
 from src.utils import metric
+from src.train.eval_reverse_ppl import eval_reverse_ppl
 
 def categorical_sample(config: dict) -> None:
 
@@ -65,3 +66,5 @@ def categorical_sample(config: dict) -> None:
                            model_path=language_model_path, vocab_path=vocab_path)
 
     print('category sample ppl: %.4f' % metric.mean(ppl))
+
+    eval_reverse_ppl(config, categorical_sample_save_path)

@@ -1,3 +1,4 @@
+seed: 42
 base_path: data/amazon
 glove_source_path: /home/jiangqn/datasets/embeddings/glove.840B.300d.txt
 max_len: 15
@@ -15,7 +16,7 @@ text_cnn:
 language_model:
   embed_size: 300
   hidden_size: 300
-  num_layers: 2
+  num_layers: 1
   dropout: 0.3
   weight_tying: False
   batch_size: 64
