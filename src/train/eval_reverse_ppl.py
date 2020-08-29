@@ -35,13 +35,13 @@ def eval_reverse_ppl(config: dict, sample_path: str = None) -> float:
 
 		vae = torch.load(vae_path)
 
-		reverse_ppl_sample_num = config['vanilla_sample']['sample_num']
+		# reverse_ppl_sample_num = config['vanilla_sample']['sample_num']
 
-		# reverse_ppl_sample_num = 1000000
+		reverse_ppl_sample_num = 200000
 
 		batch_size = config['vae']['batch_size']
 
-		batch_sizes = [batch_size] * (reverse_ppl_sample_num // batch_size) + [reverse_ppl_sample_num % batch_size]
+		batch_sizes = [batch_size] * (reverse_ppl_sample_num // batch_size) + ([reverse_ppl_sample_num % batch_size] if reverse_ppl_sample_num % batch_size != 0 else [])
 
 		sentences = ['sentence']
 
@@ -102,6 +102,8 @@ def eval_reverse_ppl(config: dict, sample_path: str = None) -> float:
 	logger.info('start train')
 
 	min_dev_loss = 1e9
+	patience = 0
+	max_patience = 10
 
 	for epoch in range(config['epoches']):
 
@@ -144,6 +146,15 @@ def eval_reverse_ppl(config: dict, sample_path: str = None) -> float:
 				if dev_loss < min_dev_loss:
 					min_dev_loss = dev_loss
 					torch.save(model, save_path)
+					patience = 0
+				else:
+					patience += 1
+
+				if patience == max_patience:
+					break
+
+		if patience == max_patience:
+			break
 
 	logger.info('dev_loss: %.4f\tdev_ppl: %.4f' % (min_dev_loss, 2 ** min_dev_loss))
 

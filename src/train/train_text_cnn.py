@@ -67,8 +67,11 @@ def train_text_cnn(config: dict) -> None:
 
     logger.info('start train')
 
+    max_patience = config['max_patience']
+
     min_dev_loss = 1e9
     corr_dev_accuracy = 0
+    patience = 0
 
     for epoch in range(config['epoches']):
 
@@ -112,6 +115,16 @@ def train_text_cnn(config: dict) -> None:
                     min_dev_loss = dev_loss
                     corr_dev_accuracy = dev_accuracy
                     torch.save(model, save_path)
+                    patience = 0
+                else:
+                    patience += 1
+
+                if patience == max_patience:
+                    break
+
+        if patience == max_patience:
+            break
+
 
     logger.info('dev_loss: %.4f\tdev_accuracy: %.4f' % (min_dev_loss, corr_dev_accuracy))
     logger.info('finish')

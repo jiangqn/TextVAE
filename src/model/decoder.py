@@ -65,7 +65,11 @@ class Decoder(nn.Module):
         for i in range(max_len):
             hidden, token_logit = self.step(hidden, token)
             if i == 0:
-                token_logit[:, EOS_INDEX] = 0
+                try:
+                    token_logit[:, EOS_INDEX] = 0
+                except:
+                    print(hidden.size())
+                    print(token_logit.size())
             token = token_logit.argmax(dim=-1)
             logit.append(token_logit)
         logit = torch.stack(logit, dim=1)

@@ -67,4 +67,4 @@ def categorical_sample(config: dict) -> None:
 
     print('category sample ppl: %.4f' % metric.mean(ppl))
 
-    eval_reverse_ppl(config, categorical_sample_save_path)
+    # eval_reverse_ppl(config, categorical_sample_save_path)
