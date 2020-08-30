@@ -56,3 +56,7 @@ def vanilla_sample(config: dict) -> None:
     ppl = get_ppl_from_tsv(vanilla_sample_save_path, config['language_model']['batch_size'], model_path=language_model_path, vocab_path=vocab_path)
 
     print('vanilla sample ppl: %.4f' % metric.mean(ppl))
+
+    reverse_ppl = eval_reverse_ppl(config, vanilla_sample_save_path)
+
+    print('vanilla sample reverse ppl: %.4f' % reverse_ppl)

@@ -3,6 +3,7 @@ import torch
 from torch import nn, optim
 from torchtext import data
 from torchtext.data import TabularDataset, Iterator
+from torch.utils.tensorboard import SummaryWriter
 import logging
 import pickle
 import numpy as np
@@ -24,6 +25,12 @@ def train_vae(config: dict) -> None:
     language_model_path = os.path.join(base_path, 'language_model.pkl')
     vocab_path = os.path.join(base_path, 'vocab.pkl')
     embedding_path = os.path.join(base_path, 'embedding.npy')
+    log_base_path = os.path.join(base_path, 'log')
+
+    if os.path.isdir(log_base_path):
+        os.system('rm -rf %s' % log_base_path)
+
+    writer = SummaryWriter(log_base_path)
 
     max_len = config['max_len']
 
@@ -145,6 +152,46 @@ def train_vae(config: dict) -> None:
                 dev_ce_loss, dev_kl_loss, dev_wer, sample_ppl = eval_text_vae(model, dev_iter, base_path, language_model=language_model, max_len=max_len)
                 logger.info('[epoch %2d step %4d]\tdev_ce_loss: %.4f dev_kl_loss: %.4f dev_ppl: %.4f dev_wer: %.4f sample_ppl: %.4f'
                             % (epoch, i, dev_ce_loss, dev_kl_loss, 2 ** dev_ce_loss, dev_wer, sample_ppl))
+
+                writer.add_scalar('kl_weight', kl_annealer.linear_anneal(global_step), global_step)
+
+                writer.add_scalars(
+                    'ce_loss',
+                    {
+                        'train_ce_loss': train_ce_loss,
+                        'dev_ce_loss': dev_ce_loss
+                    },
+                    global_step
+                )
+
+                writer.add_scalars(
+                    'kl_loss',
+                    {
+                        'train_kl_loss': train_kl_loss,
+                        'dev_kl_loss': dev_kl_loss
+                    },
+                    global_step
+                )
+
+                writer.add_scalars(
+                    'ppl',
+                    {
+                        'train_ppl': 2 ** train_ce_loss,
+                        'dev_ppl': 2 ** dev_ce_loss
+                    },
+                    global_step
+                )
+
+                writer.add_scalars(
+                    'wer',
+                    {
+                        'train_wer': train_wer,
+                        'dev_wer': dev_wer
+                    },
+                    global_step
+                )
+
+                writer.add_scalar('sample_ppl', sample_ppl, global_step)
 
                 dev_loss = dev_ce_loss + dev_kl_loss * config['lambd']
                 if global_step >= 1000 and dev_loss < min_dev_loss:

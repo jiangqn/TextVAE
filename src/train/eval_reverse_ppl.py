@@ -81,7 +81,6 @@ def eval_reverse_ppl(config: dict, sample_path: str = None) -> float:
 	dev_iter = Iterator(dev_data, batch_size=config['batch_size'], shuffle=False, device=device)
 	test_iter = Iterator(test_data, batch_size=config['batch_size'], shuffle=False, device=device)
 
-	logger.info('build model')
 	model = LanguageModel(
 		vocab_size=vocab_size,
 		embed_size=config['embed_size'],
@@ -92,14 +91,10 @@ def eval_reverse_ppl(config: dict, sample_path: str = None) -> float:
 	)
 	model.load_pretrained_embeddings(path=embedding_path)
 
-	logger.info('transfer model to GPU')
 	model = model.to(device)
 
-	logger.info('set up criterion and optimizer')
 	criterion = nn.CrossEntropyLoss(ignore_index=PAD_INDEX)
 	optimizer = optim.Adam(model.parameters(), lr=config['lr'], weight_decay=config['weight_decay'])
-
-	logger.info('start train')
 
 	min_dev_loss = 1e9
 	patience = 0
@@ -156,16 +151,13 @@ def eval_reverse_ppl(config: dict, sample_path: str = None) -> float:
 		if patience == max_patience:
 			break
 
-	logger.info('dev_loss: %.4f\tdev_ppl: %.4f' % (min_dev_loss, 2 ** min_dev_loss))
+	# logger.info('dev_loss: %.4f\tdev_ppl: %.4f' % (min_dev_loss, 2 ** min_dev_loss))
 
 	model = torch.load(save_path)
 	test_loss = eval_language_model(model, test_iter, criterion)
-	logger.info('test_loss: %.4f\ttest_ppl: %.4f' % (test_loss, 2 ** test_loss))
+	# logger.info('test_loss: %.4f\ttest_ppl: %.4f' % (test_loss, 2 ** test_loss))
 
-	os.remove(reverse_ppl_sample_path)
 	os.remove(save_path)
-
-	logger.info('finish')
 
 	test_ppl = 2 ** test_loss
 	return test_ppl

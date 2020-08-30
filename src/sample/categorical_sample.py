@@ -60,11 +60,13 @@ def categorical_sample(config: dict) -> None:
     label = get_categorical_features_from_tsv(file_path=categorical_sample_save_path, batch_size=config['text_cnn']['batch_size'],
                                               model_path=text_cnn_path, vocab_path=vocab_path, output_category=True)
 
-    print('category sample accuracy: %.4f' % metric.accuracy(label, target_label.tolist()))
+    print('categorical sample accuracy: %.4f' % metric.accuracy(label, target_label.tolist()))
 
     ppl = get_ppl_from_tsv(file_path=categorical_sample_save_path, batch_size=config['language_model']['batch_size'],
                            model_path=language_model_path, vocab_path=vocab_path)
 
-    print('category sample ppl: %.4f' % metric.mean(ppl))
+    print('categorical sample ppl: %.4f' % metric.mean(ppl))
 
-    # eval_reverse_ppl(config, categorical_sample_save_path)
+    reverse_ppl = eval_reverse_ppl(config, categorical_sample_save_path)
+
+    print('categorical sample reverse ppl: %.4f' % reverse_ppl)

@@ -9,6 +9,7 @@ from src.utils.sample_from_encoding import sample_from_encoding
 from src.get_features.get_length import get_length
 from src.utils import metric
 from src.get_features.get_ppl import get_ppl_from_tsv
+from src.train.eval_reverse_ppl import eval_reverse_ppl
 
 def length_sample(config: dict) -> None:
 
@@ -70,3 +71,7 @@ def length_sample(config: dict) -> None:
     print('diff: %.4f' % metric.diff(length, target_length))
     print('correlation: %.4f' % metric.correlation(length, target_length))
     print('ppl: %.4f' % metric.mean(ppl))
+
+    reverse_ppl = eval_reverse_ppl(config, length_sample_save_path)
+
+    print('length sample reverse ppl: %.4f' % reverse_ppl)

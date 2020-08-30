@@ -30,7 +30,7 @@ language_model:
 vae:
   embed_size: 300
   hidden_size: 300
-  num_layers: 1
+  num_layers: 2
   dropout: 0.5
   word_dropout: 0.5
   enc_dec_tying: True
@@ -43,7 +43,7 @@ vae:
   epoches: 1
   eval_freq: 100
   clip_grad_norm: 5.0
-  anneal_step: 500
+  anneal_step: 3000
 vanilla_sample:
   sample_num: 100000
   save_encoding: True
