@@ -70,7 +70,7 @@ elif args.model == 'vae':
         test_vae_encoding(config)
     elif args.task == 'eval_reverse_ppl':
         from src.train.eval_reverse_ppl import eval_reverse_ppl
-        path = os.path.join(config['base_path'], 'vanilla_sample_100000.npy')
+        path = os.path.join(config['base_path'], 'vanilla_sample_100000.tsv')
         eval_reverse_ppl(config)
 elif args.model == 'lm':
     if args.task == 'train':

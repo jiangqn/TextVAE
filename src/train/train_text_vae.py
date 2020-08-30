@@ -10,6 +10,7 @@ from src.model.text_vae import TextVAE
 from src.constants import PAD_INDEX, SOS, EOS
 from src.train.eval import eval_text_vae
 from src.utils.gaussian_kldiv import GaussianKLDiv
+from src.utils.kl_anneal import KLAnnealer
 
 def train_vae(config: dict) -> None:
 
@@ -74,6 +75,8 @@ def train_vae(config: dict) -> None:
 
     logger.info('start train')
 
+    kl_annealer = KLAnnealer(latent_size=config['num_layers'] * config['hidden_size'], beta=config['beta'], anneal_step=config['anneal_step'])
+
     # min_total_ppl = 1e9
     min_dev_loss = 1e9
     corr_ce_loss = 1e9
@@ -113,8 +116,7 @@ def train_vae(config: dict) -> None:
 
             ce_loss = criterion(logit, trg_output)
             kl_loss = kldiv(mean, std)
-            coefficient = config['beta'] * min(global_step, config['anneal_step']) / config['anneal_step']
-            loss = ce_loss + kl_loss * coefficient
+            loss = ce_loss + kl_loss * kl_annealer.linear_anneal(global_step)
             loss.backward()
             nn.utils.clip_grad_norm_(model.parameters(), config['clip_grad_norm'])
             optimizer.step()
@@ -141,15 +143,11 @@ def train_vae(config: dict) -> None:
                 total_samples = 0
 
                 dev_ce_loss, dev_kl_loss, dev_wer, sample_ppl = eval_text_vae(model, dev_iter, base_path, language_model=language_model, max_len=max_len)
-                logger.info('[epoch %2d step %4d]\ttrain_ce_loss: %.4f train_kl_loss: %.4f train_ppl: %.4f train_wer: %.4f dev_ce_loss: %.4f dev_kl_loss: %.4f dev_ppl: %.4f dev_wer: %.4f sample_ppl: %.4f'
-                            % (epoch, i, train_ce_loss, train_kl_loss, 2 ** train_ce_loss, train_wer, dev_ce_loss, dev_kl_loss, 2 ** dev_ce_loss, dev_wer, sample_ppl))
+                logger.info('[epoch %2d step %4d]\tdev_ce_loss: %.4f dev_kl_loss: %.4f dev_ppl: %.4f dev_wer: %.4f sample_ppl: %.4f'
+                            % (epoch, i, dev_ce_loss, dev_kl_loss, 2 ** dev_ce_loss, dev_wer, sample_ppl))
 
                 dev_loss = dev_ce_loss + dev_kl_loss * config['lambd']
-                # dev_ppl = 2 ** dev_ce_loss
-                # total_ppl = dev_ppl + sample_ppl
-                # if total_ppl < min_total_ppl:
-                #     min_total_ppl = total_ppl
-                if global_step > 1000 and dev_loss < min_dev_loss:
+                if global_step >= 1000 and dev_loss < min_dev_loss:
                     min_dev_loss = dev_loss
                     corr_ce_loss = dev_ce_loss
                     corr_kl_loss = dev_kl_loss

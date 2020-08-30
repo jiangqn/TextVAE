@@ -1,7 +1,9 @@
 #!/bin/bash
-gpu=1
+gpu=0
 echo "train"
 python main.py --config amazon_config.yaml --model vae --task train --gpu $gpu
+echo "eval_reverse_ppl"
+python main.py --config amazon_config.yaml --model vae --task eval_reverse_ppl --gpu $gpu
 echo "vanilla_sample"
 python main.py --config amazon_config.yaml --model vae --task vanilla_sample --gpu $gpu
 echo "get_features"

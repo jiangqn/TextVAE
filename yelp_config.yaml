@@ -36,15 +36,14 @@ vae:
   enc_dec_tying: True
   dec_gen_tying: True
   batch_size: 64
-  beta: 0.05
-  lambd: 0.05
+  beta: 14
+  lambd: 20
   lr: 0.001
   weight_decay: 0
   epoches: 2
   eval_freq: 100
   clip_grad_norm: 5.0
-  anneal_step: 3000
-  max_patience: 10
+  anneal_step: 500
 vanilla_sample:
   sample_num: 100000
   save_encoding: True
