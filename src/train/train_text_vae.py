@@ -82,7 +82,7 @@ def train_vae(config: dict) -> None:
 
     logger.info('start train')
 
-    kl_annealer = KLAnnealer(latent_size=config['num_layers'] * config['hidden_size'], beta=config['beta'], anneal_step=config['anneal_step'])
+    kl_annealer = KLAnnealer(beta=config['beta'], anneal_step=config['anneal_step'])
 
     # min_total_ppl = 1e9
     min_dev_loss = 1e9
@@ -193,7 +193,7 @@ def train_vae(config: dict) -> None:
 
                 writer.add_scalar('sample_ppl', sample_ppl, global_step)
 
-                dev_loss = dev_ce_loss + dev_kl_loss * config['lambd']
+                dev_loss = dev_ce_loss + dev_kl_loss * config['beta']
                 if global_step >= 1000 and dev_loss < min_dev_loss:
                     min_dev_loss = dev_loss
                     corr_ce_loss = dev_ce_loss

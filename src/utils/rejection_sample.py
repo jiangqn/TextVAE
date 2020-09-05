@@ -15,7 +15,7 @@ def rejection_sample(num_layers: int, num: int, hidden_size: int, classifier, la
         prediction, confidience = classifier.predict(transformed_encoding, output_probability=True)
         prediction = torch.from_numpy(prediction).long()
         confidience = torch.from_numpy(confidience).float()
-        index = torch.where((prediction == label) & (confidience >= 0.9))[0]
+        index = torch.where((prediction == label) & (confidience >= 0.95))[0]
         encoding = encoding.index_select(dim=1, index=index)
         valid_num = min(num - current_num, encoding.size(1))
         encoding_bucket.append(encoding[:, 0:valid_num:, :])

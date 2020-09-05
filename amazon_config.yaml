@@ -37,7 +37,6 @@ vae:
   dec_gen_tying: True
   batch_size: 64
   beta: 0.05
-  lambd: 0.05
   lr: 0.001
   weight_decay: 0
   epoches: 1
