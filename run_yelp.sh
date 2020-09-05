@@ -1,5 +1,5 @@
 #!/bin/bash
-gpu=1
+gpu=6
 echo "train"
 python main.py --config yelp_config.yaml --model vae --task train --gpu $gpu
 echo "vanilla_sample"

@@ -1,5 +1,5 @@
 #!/bin/bash
-gpu=0
+gpu=7
 echo "train"
 python main.py --config amazon_config.yaml --model vae --task train --gpu $gpu
 echo "vanilla_sample"

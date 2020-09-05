@@ -9,4 +9,4 @@ class KLAnnealer(object):
         self.anneal_step = anneal_step
 
     def linear_anneal(self, step: int) -> float:
-        return min(step, self.anneal_step) / self.anneal_step / self.latent_size * self.beta
+        return min(step, self.anneal_step) / self.anneal_step * self.beta
