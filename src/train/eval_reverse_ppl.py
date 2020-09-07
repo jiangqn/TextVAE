@@ -35,9 +35,7 @@ def eval_reverse_ppl(config: dict, sample_path: str = None) -> float:
 
 		vae = torch.load(vae_path)
 
-		# reverse_ppl_sample_num = config['vanilla_sample']['sample_num']
-
-		reverse_ppl_sample_num = 200000
+		reverse_ppl_sample_num = config['vanilla_sample']['sample_num']
 
 		batch_size = config['vae']['batch_size']
 

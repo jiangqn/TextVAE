@@ -33,10 +33,10 @@ def numerical_visualize(base_path: str, encoding: np.ndarray, df: pd.DataFrame) 
 
     cmap = {
         'length': 'viridis',
-        'depth': 'cividis'
+        'depth': 'gnuplot'
     }
 
-    # pdf = PdfPages(os.path.join(base_path, 'numerical_visualize.pdf'))
+    pdf = PdfPages(os.path.join(base_path, 'numerical_visualize.pdf'))
     plt.figure()
 
     for i, prop in enumerate(['length', 'depth']):
@@ -49,7 +49,7 @@ def numerical_visualize(base_path: str, encoding: np.ndarray, df: pd.DataFrame) 
 
         feature = np.asarray(df[prop])
 
-        plt.subplot(2, 2, i + 1)
+        plt.subplot(2, 2, i * 2 + 1)
         plt.scatter(x, y, c=feature, s=0.1, cmap=cmap[prop])
 
         corr = np.corrcoef(x, feature)[0, 1]
@@ -59,16 +59,16 @@ def numerical_visualize(base_path: str, encoding: np.ndarray, df: pd.DataFrame) 
         pca = PCA(n_components=2)
         pca_encoding = pca.fit_transform(encoding)
 
-        plt.subplot(2, 2, i + 3)
+        plt.subplot(2, 2, i * 2 + 2)
         plt.scatter(pca_encoding[:, 0], pca_encoding[:, 1], c=feature, s=0.1, cmap=cmap[prop])
         plt.title('%s (PCA)' % prop)
         plt.colorbar()
 
     plt.subplots_adjust(hspace=0.3)
-    # pdf.savefig()
-    plt.savefig(os.path.join(base_path, 'numerical_visualize.png'))
+    pdf.savefig()
+    # plt.savefig(os.path.join(base_path, 'numerical_visualize.png'))
     plt.close()
-    # pdf.close()
+    pdf.close()
 
 
 def categorical_visualize(base_path: str, encoding: np.ndarray, df: pd.DataFrame) -> None:
@@ -76,8 +76,8 @@ def categorical_visualize(base_path: str, encoding: np.ndarray, df: pd.DataFrame
     prop = 'sentiment' if 'yelp' in base_path else 'topic'
 
     cmap = {
-        'sentiment': 'summer',
-        'topic': 'winter'
+        'sentiment': 'viridis',
+        'topic': 'Dark2'
     }
 
     classifier_path = os.path.join(base_path, 'classifier.pkl')
@@ -106,7 +106,7 @@ def categorical_visualize(base_path: str, encoding: np.ndarray, df: pd.DataFrame
     x = encoding.dot(v)
     y = encoding.dot(u)
 
-    # pdf = PdfPages(os.path.join(base_path, 'categorical_visualize.pdf'))
+    pdf = PdfPages(os.path.join(base_path, 'categorical_visualize.pdf'))
     plt.figure(figsize=(10, 5))
 
     plt.subplot(1, 2, 1)
@@ -129,10 +129,10 @@ def categorical_visualize(base_path: str, encoding: np.ndarray, df: pd.DataFrame
     plt.scatter(pca_encoding[:, 0], pca_encoding[:, 1], c=label, s=0.1, cmap=cmap[prop])
     plt.title('%s (PCA)' % prop)
 
-    # pdf.savefig()
-    plt.savefig(os.path.join(base_path, 'categorical_visualize.png'))
+    pdf.savefig()
+    # plt.savefig(os.path.join(base_path, 'categorical_visualize.png'))
     plt.close()
-    # pdf.close()
+    pdf.close()
 
 def visualize(config: dict) -> None:
 

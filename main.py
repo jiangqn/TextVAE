@@ -7,7 +7,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--model', type=str, default='vae', choices=['vae', 'text_cnn', 'lm'])
 parser.add_argument('--task', type=str, default='train', choices=['preprocess', 'train', 'test', 'vanilla_sample', 'get_features', 'correlation',
         'visualize', 'pca_visualize', 'tsne_visualize', 'linear_separate', 'categorical_sample', 'compute_projection_statistics', 'sentiment_sample', 'length_sample', 'depth_sample',
-        'test_vae_encoding', 'sentiment_transfer', 'eval_reverse_ppl'])
+        'test_vae_encoding', 'sentiment_transfer', 'eval_reverse_ppl', 'measure_disentanglement', 'length_interpolate'])
 parser.add_argument('--gpu', type=int, default=0, choices=[i for i in range(8)])
 parser.add_argument('--config', type=str, default='yelp_config.yaml')
 
@@ -72,6 +72,12 @@ elif args.model == 'vae':
         from src.train.eval_reverse_ppl import eval_reverse_ppl
         path = os.path.join(config['base_path'], 'vanilla_sample_100000.tsv')
         eval_reverse_ppl(config)
+    elif args.task == 'measure_disentanglement':
+        from src.utils.measure_disentanglement import measure_disentanglement
+        measure_disentanglement(config)
+    elif args.task == 'length_interpolate':
+        from src.sample.length_interpolate import length_interpolate
+        length_interpolate(config)
 elif args.model == 'lm':
     if args.task == 'train':
         from src.train.train_language_model import train_language_model
