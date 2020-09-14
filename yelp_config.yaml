@@ -1,4 +1,4 @@
-seed: 42
+seed: 210
 base_path: data/yelp
 glove_source_path: /home/jiangqn/datasets/embeddings/glove.840B.300d.txt
 max_len: 15

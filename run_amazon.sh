@@ -1,5 +1,13 @@
 #!/bin/bash
 gpu=7
+echo "train text_cnn"
+python main.py --config amazon_config.yaml --model text_cnn --task train --gpu $gpu
+echo "test text_cnn"
+python main.py --config amazon_config.yaml --model text_cnn --task test --gpu $gpu
+echo "train lm"
+python main.py --config amazon_config.yaml --model lm --task train --gpu $gpu
+echo "test lm"
+python main.py --config amazon_config.yaml --model lm --task test --gpu $gpu
 echo "train"
 python main.py --config amazon_config.yaml --model vae --task train --gpu $gpu
 echo "vanilla_sample"
@@ -18,3 +26,5 @@ echo "length_sample"
 python main.py --config amazon_config.yaml --model vae --task length_sample --gpu $gpu
 echo "depth_sample"
 python main.py --config amazon_config.yaml --model vae --task depth_sample --gpu $gpu
+echo "measure_disentanglement"
+python main.py --config amazon_config.yaml --model vae --task measure_disentanglement --gpu $gpu
