@@ -1,5 +1,5 @@
 #!/bin/bash
-gpu=7
+gpu=2
 echo "train text_cnn"
 python main.py --config amazon_config.yaml --model text_cnn --task train --gpu $gpu
 echo "test text_cnn"

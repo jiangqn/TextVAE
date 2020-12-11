@@ -1,4 +1,4 @@
-seed: 210
+seed: 42
 base_path: data/amazon
 glove_source_path: /home/jiangqn/datasets/embeddings/glove.840B.300d.txt
 max_len: 15

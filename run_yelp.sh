@@ -1,5 +1,5 @@
 #!/bin/bash
-gpu=6
+gpu=1
 echo "train text_cnn"
 python main.py --config yelp_config.yaml --model text_cnn --task train --gpu $gpu
 echo "test text_cnn"
