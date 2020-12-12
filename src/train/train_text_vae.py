@@ -7,82 +7,83 @@ from torch.utils.tensorboard import SummaryWriter
 import logging
 import pickle
 import numpy as np
-from src.old_model.text_vae import TextVAE
+from src.model.text_vae import build_model
 from src.constants import PAD_INDEX, SOS, EOS
 from src.train.eval import eval_text_vae
 from src.utils.gaussian_kldiv import GaussianKLDiv
 from src.utils.kl_anneal import KLAnnealer
 
-def train_vae(config: dict) -> None:
+def train_text_vae(config: dict) -> None:
 
-    os.environ['CUDA_VISIBLE_DEVICES'] = str(config['gpu'])
+    os.environ["CUDA_VISIBLE_DEVICES"] = str(config["gpu"])
 
-    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s', datefmt='%d-%b-%y %H:%M:%S')
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(message)s", datefmt="%d-%b-%y %H:%M:%S")
     logger = logging.getLogger(__name__)
 
-    base_path = config['base_path']
-    save_path = os.path.join(base_path, 'vae.pkl')
-    language_model_path = os.path.join(base_path, 'language_model.pkl')
-    vocab_path = os.path.join(base_path, 'vocab.pkl')
-    embedding_path = os.path.join(base_path, 'embedding.npy')
-    log_base_path = os.path.join(base_path, 'log')
+    base_path = config["base_path"]
+    save_path = os.path.join(base_path, "vae.pkl")
+    language_model_path = os.path.join(base_path, "language_model.pkl")
+    vocab_path = os.path.join(base_path, "vocab.pkl")
+    embedding_path = os.path.join(base_path, "embedding.npy")
+    log_base_path = os.path.join(base_path, "log")
 
     if os.path.isdir(log_base_path):
-        os.system('rm -rf %s' % log_base_path)
+        os.system("rm -rf %s" % log_base_path)
 
     writer = SummaryWriter(log_base_path)
 
-    max_len = config['max_len']
+    max_len = config["max_len"]
 
-    config = config['vae']
+    config = config["vae"]
 
-    logger.info('build dataset')
+    logger.info("build dataset")
 
     TEXT = data.Field(sequential=True, lower=True, batch_first=True, init_token=SOS, eos_token=EOS)
-    fields = [('sentence', TEXT)]
-    train_data = TabularDataset(path=os.path.join(base_path, 'train.tsv'),
-                                format='tsv', skip_header=True, fields=fields)
-    dev_data = TabularDataset(path=os.path.join(base_path, 'dev.tsv'),
-                              format='tsv', skip_header=True, fields=fields)
+    fields = [("sentence", TEXT)]
+    train_data = TabularDataset(path=os.path.join(base_path, "train.tsv"),
+                                format="tsv", skip_header=True, fields=fields)
+    dev_data = TabularDataset(path=os.path.join(base_path, "dev.tsv"),
+                              format="tsv", skip_header=True, fields=fields)
 
-    logger.info('load vocab')
-    with open(vocab_path, 'rb') as handle:
+    logger.info("load vocab")
+    with open(vocab_path, "rb") as handle:
         vocab = pickle.load(handle)
     TEXT.vocab = vocab
     vocab_size = len(vocab.itos)
-    logger.info('vocab_size: %d' % vocab_size)
+    logger.info("vocab_size: %d" % vocab_size)
 
     language_model = torch.load(language_model_path)
 
-    logger.info('build data iterator')
-    device = torch.device('cuda:0')
-    train_iter = Iterator(train_data, batch_size=config['batch_size'], shuffle=True, device=device)
-    dev_iter = Iterator(dev_data, batch_size=config['batch_size'], shuffle=False, device=device)
+    logger.info("build data iterator")
+    device = torch.device("cuda:0")
+    train_iter = Iterator(train_data, batch_size=config["batch_size"], shuffle=True, device=device)
+    dev_iter = Iterator(dev_data, batch_size=config["batch_size"], shuffle=False, device=device)
 
-    logger.info('build old_model')
-    model = TextVAE(
-        vocab_size=vocab_size,
-        embed_size=config['embed_size'],
-        hidden_size=config['hidden_size'],
-        num_layers=config['num_layers'],
-        dropout=config['dropout'],
-        word_dropout=config['word_dropout'],
-        enc_dec_tying=config['enc_dec_tying'],
-        dec_gen_tying=config['dec_gen_tying']
-    )
+    logger.info("build old_model")
+    # model = TextVAE(
+    #     vocab_size=vocab_size,
+    #     embed_size=config["embed_size"],
+    #     hidden_size=config["hidden_size"],
+    #     num_layers=config["num_layers"],
+    #     dropout=config["dropout"],
+    #     word_dropout=config["word_dropout"],
+    #     enc_dec_tying=config["enc_dec_tying"],
+    #     dec_gen_tying=config["dec_gen_tying"]
+    # )
+    model = build_model(config)
     model.load_pretrained_embeddings(path=embedding_path)
 
-    logger.info('transfer old_model to GPU')
+    logger.info("transfer old_model to GPU")
     model = model.to(device)
 
-    logger.info('set up criterion and optimizer')
+    logger.info("set up criterion and optimizer")
     criterion = nn.CrossEntropyLoss(ignore_index=PAD_INDEX)
     kldiv = GaussianKLDiv()
-    optimizer = optim.Adam(model.parameters(), lr=config['lr'], weight_decay=config['weight_decay'])
+    optimizer = optim.Adam(model.parameters(), lr=config["lr"], weight_decay=config["weight_decay"])
 
-    logger.info('start train')
+    logger.info("start train")
 
-    kl_annealer = KLAnnealer(beta=config['beta'], anneal_step=config['anneal_step'])
+    kl_annealer = KLAnnealer(beta=config["beta"], anneal_step=config["anneal_step"])
 
     # min_total_ppl = 1e9
     min_dev_loss = 1e9
@@ -93,9 +94,9 @@ def train_vae(config: dict) -> None:
     corr_epoch = 0
     corr_step = 0
 
-    global_step = 0 # min(globel_step, config['anneal_step']) / config['anneal_step']
+    global_step = 0 # min(globel_step, config["anneal_step"]) / config["anneal_step"]
 
-    for epoch in range(config['epoches']):
+    for epoch in range(config["epoches"]):
 
         total_tokens = 0
         total_samples = 0
@@ -125,7 +126,7 @@ def train_vae(config: dict) -> None:
             kl_loss = kldiv(mean, std)
             loss = ce_loss + kl_loss * kl_annealer.linear_anneal(global_step)
             loss.backward()
-            nn.utils.clip_grad_norm_(model.parameters(), config['clip_grad_norm'])
+            nn.utils.clip_grad_norm_(model.parameters(), config["clip_grad_norm"])
             optimizer.step()
             global_step += 1
 
@@ -139,7 +140,7 @@ def train_vae(config: dict) -> None:
             prediction = logit.argmax(dim=-1)
             correct_tokens += (prediction.masked_select(mask) == trg_output.masked_select(mask)).long().sum().item()
 
-            if i % config['eval_freq'] == 0:
+            if i % config["eval_freq"] == 0:
                 train_wer = 1 - correct_tokens / total_tokens
                 train_ce_loss = total_ce_loss / total_tokens
                 train_kl_loss = total_kl_loss / total_samples
@@ -150,50 +151,50 @@ def train_vae(config: dict) -> None:
                 total_samples = 0
 
                 dev_ce_loss, dev_kl_loss, dev_wer, sample_ppl = eval_text_vae(model, dev_iter, base_path, language_model=language_model, max_len=max_len)
-                logger.info('[epoch %2d step %4d]\tdev_ce_loss: %.4f dev_kl_loss: %.4f dev_ppl: %.4f dev_wer: %.4f sample_ppl: %.4f'
+                logger.info("[epoch %2d step %4d]\tdev_ce_loss: %.4f dev_kl_loss: %.4f dev_ppl: %.4f dev_wer: %.4f sample_ppl: %.4f"
                             % (epoch, i, dev_ce_loss, dev_kl_loss, 2 ** dev_ce_loss, dev_wer, sample_ppl))
 
-                writer.add_scalar('kl_weight', kl_annealer.linear_anneal(global_step), global_step)
+                writer.add_scalar("kl_weight", kl_annealer.linear_anneal(global_step), global_step)
 
                 writer.add_scalars(
-                    'ce_loss',
+                    "ce_loss",
                     {
-                        'train_ce_loss': train_ce_loss,
-                        'dev_ce_loss': dev_ce_loss
+                        "train_ce_loss": train_ce_loss,
+                        "dev_ce_loss": dev_ce_loss
                     },
                     global_step
                 )
 
                 writer.add_scalars(
-                    'kl_loss',
+                    "kl_loss",
                     {
-                        'train_kl_loss': train_kl_loss,
-                        'dev_kl_loss': dev_kl_loss
+                        "train_kl_loss": train_kl_loss,
+                        "dev_kl_loss": dev_kl_loss
                     },
                     global_step
                 )
 
                 writer.add_scalars(
-                    'ppl',
+                    "ppl",
                     {
-                        'train_ppl': 2 ** train_ce_loss,
-                        'dev_ppl': 2 ** dev_ce_loss
+                        "train_ppl": 2 ** train_ce_loss,
+                        "dev_ppl": 2 ** dev_ce_loss
                     },
                     global_step
                 )
 
                 writer.add_scalars(
-                    'wer',
+                    "wer",
                     {
-                        'train_wer': train_wer,
-                        'dev_wer': dev_wer
+                        "train_wer": train_wer,
+                        "dev_wer": dev_wer
                     },
                     global_step
                 )
 
-                writer.add_scalar('sample_ppl', sample_ppl, global_step)
+                writer.add_scalar("sample_ppl", sample_ppl, global_step)
 
-                dev_loss = dev_ce_loss + dev_kl_loss * config['beta']
+                dev_loss = dev_ce_loss + dev_kl_loss * config["beta"]
                 if global_step >= 1000 and dev_loss < min_dev_loss:
                     min_dev_loss = dev_loss
                     corr_ce_loss = dev_ce_loss
@@ -204,6 +205,6 @@ def train_vae(config: dict) -> None:
                     corr_step = i
                     torch.save(model, save_path)
 
-    logger.info('[best checkpoint] at [epoch %2d step %4d] dev_ce_loss: %.4f dev_kl_loss: %.4f dev_ppl: %.4f dev_wer: %.4f sample_ppl: %.4f'
+    logger.info("[best checkpoint] at [epoch %2d step %4d] dev_ce_loss: %.4f dev_kl_loss: %.4f dev_ppl: %.4f dev_wer: %.4f sample_ppl: %.4f"
                 % (corr_epoch, corr_step, corr_ce_loss, corr_kl_loss, 2 ** corr_ce_loss, corr_wer, corr_sample_ppl))
-    logger.info('finish')
+    logger.info("finish")

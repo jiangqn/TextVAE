@@ -22,18 +22,18 @@ class TextCNN(nn.Module):
         self.linear = nn.Linear(self.feature_size, num_categories)
 
     def load_pretrained_embeddings(self, **kwargs) -> None:
-        assert ('path' in kwargs) ^ ('embedding' in kwargs)
-        if 'path' in kwargs:
-            embedding = np.load(kwargs['path'])
+        assert ("path" in kwargs) ^ ("embedding" in kwargs)
+        if "path" in kwargs:
+            embedding = np.load(kwargs["path"])
         else:
-            embedding = kwargs['embedding']
+            embedding = kwargs["embedding"]
         self.embedding.weight.data.copy_(torch.tensor(embedding))
 
     def forward(self, sentence: torch.Tensor) -> torch.Tensor:
-        '''
+        """
         :param sentence: torch.LongTensor (batch_size, seq_len)
         :return: torch.FloatTensor (batch_size, num_categories)
-        '''
+        """
 
         embedding = self.embedding(sentence)
         embedding = F.dropout(embedding, p=self.dropout, training=self.training)

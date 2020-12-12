@@ -40,10 +40,10 @@ class ConvEncoder(Encoder):
         src_len = mask.sum(dim=1, keepdim=True)
         embedding = self.embedding(src)
         embedding = F.dropout(embedding, p=self.dropout, training=self.training)
-        activation = embedding
+        activation = embedding.transpose(1, 2)
         for conv_layer, layer_norm in zip(self.conv_layers, self.layer_norms):
             activation = conv_layer(activation)
-            activation = layer_norm(activation)
+            activation = layer_norm(activation.transpose(1, 2)).transpose(1, 2)
         representation = torch.mean(activation, dim=-1)
         return representation
 
