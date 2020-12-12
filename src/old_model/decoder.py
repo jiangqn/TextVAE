@@ -1,7 +1,7 @@
 import torch
 from torch import nn
 from typing import List, Tuple
-from src.model.multi_layer_gru_cell import MultiLayerGRUCell
+from src.old_model.multi_layer_gru_cell import MultiLayerGRUCell
 from src.constants import SOS_INDEX, EOS_INDEX
 
 class Decoder(nn.Module):

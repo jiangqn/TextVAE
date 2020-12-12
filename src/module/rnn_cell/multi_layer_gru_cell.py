@@ -26,6 +26,6 @@ class MultiLayerGRUCell(nn.Module):
         for i, gru_cell in enumerate(self.gru_cells):
             h = gru_cell(input, hidden[i])
             output_hidden.append(h)
-            input = F.dropout(h, p=self.dropout, training=self.training)
+            input = F.dropout(h, p=self.dropout, training=self.training) # ??? in last layer
         output_hidden = torch.stack(output_hidden, dim=0)
         return output_hidden

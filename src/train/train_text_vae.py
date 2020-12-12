@@ -7,7 +7,7 @@ from torch.utils.tensorboard import SummaryWriter
 import logging
 import pickle
 import numpy as np
-from src.model.text_vae import TextVAE
+from src.old_model.text_vae import TextVAE
 from src.constants import PAD_INDEX, SOS, EOS
 from src.train.eval import eval_text_vae
 from src.utils.gaussian_kldiv import GaussianKLDiv
@@ -59,7 +59,7 @@ def train_vae(config: dict) -> None:
     train_iter = Iterator(train_data, batch_size=config['batch_size'], shuffle=True, device=device)
     dev_iter = Iterator(dev_data, batch_size=config['batch_size'], shuffle=False, device=device)
 
-    logger.info('build model')
+    logger.info('build old_model')
     model = TextVAE(
         vocab_size=vocab_size,
         embed_size=config['embed_size'],
@@ -72,7 +72,7 @@ def train_vae(config: dict) -> None:
     )
     model.load_pretrained_embeddings(path=embedding_path)
 
-    logger.info('transfer model to GPU')
+    logger.info('transfer old_model to GPU')
     model = model.to(device)
 
     logger.info('set up criterion and optimizer')

@@ -1,7 +1,7 @@
 import os
 import numpy as np
-from src.model.logistic_regression import LogisticRegressionClassifier
-from src.model.linear_svm import LinearSVMClassifier
+from src.old_model.logistic_regression import LogisticRegressionClassifier
+from src.old_model.linear_svm import LinearSVMClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from src.utils.tsv_reader import read_field
@@ -21,7 +21,7 @@ def linear_separate(config: dict) -> None:
 
     label = np.asarray(read_field(vanilla_sample_save_path, 'label'))
     model = LogisticRegressionClassifier(max_epoches=100)
-    # model = LogisticRegression()
+    # old_model = LogisticRegression()
     model.fit(encoding, label)
     predition = model.predict(encoding)
     accuracy = (predition == label).astype(np.float32).mean()

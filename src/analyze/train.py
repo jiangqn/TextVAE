@@ -62,7 +62,7 @@ def train():
         pin_memory=True
     )
 
-    # model = InvertibleResNet(
+    # old_model = InvertibleResNet(
     #     hidden_size=600,
     #     target_size=1,
     #     n_blocks=n_blocks
@@ -133,7 +133,7 @@ def train():
     path = "iresnet.pkl"
     torch.save(best_model, path)
 
-# f = model.transform(feature).detach().cpu().numpy()
+# f = old_model.transform(feature).detach().cpu().numpy()
 # t = target[:, 0].cpu().detach().numpy()
 # lr = LinearRegression()
 # lr.fit(f, t)

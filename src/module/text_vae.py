@@ -11,51 +11,48 @@ class TextVAE(nn.Module):
         super(TextVAE, self).__init__()
         self.encoder = encoder
         self.decoder = decoder
+        self.encoder_output_size = self.encoder.output_size
         self.latent_size = latent_size
-        self.mean_projection = nn.Linear(self.encoder.output_size, self.latent_size)
-        self.std_projection = nn.Linear(self.encoder.output_size, self.latent_size)
+        self.posterior_mean_projection = nn.Linear(self.encoder_output_size, self.latent_size)
+        self.posterior_std_projection = nn.Linear(self.encoder_output_size, self.latent_size)
 
-    def forward(self, src: torch.Tensor, trg: torch.Tensor):
+    def forward(self, src: torch.Tensor, trg: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        """
+        :param src: torch.LongTensor (batch_size, src_seq_len)
+        :param trg: torch.LongTensor (batch_size, trg_seq_len)
+        :return logit: torch.FloatTensor (batch_size, trg_seq_len vocab_size)
+        :return posterior_mean: torch.FloatTensor (batch_size, latent_size)
+        :return posterior_std: torch.FloatTensor (batch_size, latent_size)
+        """
+
+        posterior_mean, posterior_std = self.encode(src)
         if self.training:
-            latent_encoding, mean, std = self.probabilistic_encode(src)
+            latent_variable = self.reparametrize(posterior_mean, posterior_std)
         else:
-            mean, std = self.encode(src)
-            latent_encoding = mean
-        logit = self.decoder(latent_encoding, trg)
-        return logit, mean, std
+            latent_variable = posterior_mean
+
+        logit = self.decoder(latent_variable, trg)
+        return logit, posterior_mean, posterior_std
 
     def encode(self, src: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
-        '''
+        """
         :param src: torch.LongTensor (batch_size, seq_len)
-        :return mean: torch.FloatTensor (num_layers, batch_size, hidden_size)
-        :return std: torch.FloatTensor (num_layers, batch_size, hidden_size)
-        '''
+        :return posterior_mean: torch.FloatTensor (batch_size, latent_size)
+        :return posterior_std: torch.FloatTensor (batch_size, latent_size)
+        """
 
         encoder_representation = self.encoder(src)
-        mean = self.mean_projection(encoder_representation)
-        # std = F.softplus(self.std_projection(final_states))
-        std = torch.exp(self.std_projection(encoder_representation))
-        return mean, std
+        posterior_mean = self.posterior_mean_projection(encoder_representation)
+        posterior_std = torch.exp(self.posterior_std_projection(encoder_representation))
+        return posterior_mean, posterior_std
 
-    def reparametrize(self, mean: torch.Tensor, std: torch.Tensor) -> torch.Tensor:
-        '''
-        :param mean: torch.FloatTensor (num_layers, batch_size, hidden_size)
-        :param std: torch.FloatTensor (num_layers, batch_size, hidden_size)
-        :return encoding: torch.FloatTensor (num_layers, batch_size, hidden_size)
-        '''
+    def reparametrize(self, posterior_mean: torch.Tensor, posterior_std: torch.Tensor) -> torch.Tensor:
+        """
+        :param posterior_mean: torch.FloatTensor (batch_size, latent_size)
+        :param posterior_std: torch.FloatTensor (batch_size, latent_size)
+        :return latent_variable: torch.FloatTensor (batch_size, latent_size)
+        """
 
-        noise = torch.randn(size=mean.size(), device=mean.device)
-        encoding = mean + std * noise
-        return encoding
-
-    def probabilistic_encode(self, src: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-        '''
-        :param src: torch.LongTensor (batch_size, seq_len)
-        :return encoding: torch.FloatTensor (num_layers, batch_size, hidden_size)
-        :return mean: torch.FloatTensor (num_layers, batch_size, hidden_size)
-        :return std: torch.FloatTensor (num_layers, batch_size, hidden_size)
-        '''
-
-        mean, std = self.encode(src)
-        encoding = self.reparametrize(mean, std)
-        return encoding, mean, std
+        noise = torch.randn(size=posterior_mean.size(), device=posterior_mean.device)
+        latent_variable = posterior_mean + posterior_std * noise
+        return latent_variable

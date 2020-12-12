@@ -4,7 +4,7 @@ import os
 from src.utils.set_seed import set_seed
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--model', type=str, default='vae', choices=['vae', 'text_cnn', 'lm'])
+parser.add_argument('--old_model', type=str, default='vae', choices=['vae', 'text_cnn', 'lm'])
 parser.add_argument('--task', type=str, default='train', choices=['preprocess', 'train', 'test', 'vanilla_sample', 'get_features', 'correlation',
         'visualize', 'pca_visualize', 'tsne_visualize', 'linear_separate', 'categorical_sample', 'compute_projection_statistics', 'sentiment_sample', 'length_sample', 'depth_sample',
         'test_vae_encoding', 'sentiment_transfer', 'eval_reverse_ppl', 'measure_disentanglement', 'length_interpolate'])

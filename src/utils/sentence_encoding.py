@@ -112,12 +112,12 @@ def sentence_encoding_from_tsv(file_path: str, **kwargs) -> torch.Tensor:
     base_path = os.path.dirname(file_path)
     vocab_path = os.path.join(base_path, 'vocab.pkl')
 
-    assert ('model_path' in kwargs) ^ ('model' in kwargs)
+    assert ('model_path' in kwargs) ^ ('old_model' in kwargs)
 
     if 'model_path' in kwargs:
         model = torch.load(kwargs['model_path'])
     else:
-        model = torch.load(kwargs['model'])
+        model = torch.load(kwargs['old_model'])
 
     TEXT = data.Field(sequential=True, lower=True, batch_first=True, init_token=SOS, eos_token=EOS)
     fields = [('sentence', TEXT)]

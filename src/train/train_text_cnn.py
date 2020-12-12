@@ -48,7 +48,7 @@ def train_text_cnn(config: dict) -> None:
     train_iter = Iterator(train_data, batch_size=config['batch_size'], shuffle=True, device=device)
     dev_iter = Iterator(dev_data, batch_size=config['batch_size'], shuffle=False, device=device)
 
-    logger.info('build model')
+    logger.info('build old_model')
     model = TextCNN(
         vocab_size=vocab_size,
         embed_size=config['embed_size'],
@@ -58,7 +58,7 @@ def train_text_cnn(config: dict) -> None:
         num_categories=config['num_categories']
     )
     model.load_pretrained_embeddings(path=embedding_path)
-    logger.info('transfer model to GPU')
+    logger.info('transfer old_model to GPU')
     model = model.to(device)
 
     logger.info('set up criterion and optimizer')

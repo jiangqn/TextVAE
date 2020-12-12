@@ -39,13 +39,13 @@ def get_ppl(model: nn.Module, data_iter: Iterator) -> List[float]:
 
 def get_ppl_from_tsv(file_path: str, batch_size: int = 64, **kwargs) -> List[float]:
 
-    assert ('model_path' in kwargs) ^ ('model' in kwargs)
+    assert ('model_path' in kwargs) ^ ('old_model' in kwargs)
     assert ('vocab_path' in kwargs) ^ ('vocab' in kwargs)
 
     if 'model_path' in kwargs:
         model = torch.load(kwargs['model_path'])
     else:
-        model = kwargs['model']
+        model = kwargs['old_model']
 
     if 'vocab_path' in kwargs:
         with open(kwargs['vocab_path'], 'rb') as handle:
