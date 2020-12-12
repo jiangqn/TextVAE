@@ -12,8 +12,13 @@ class BOWEncoder(Encoder):
 
     def __init__(self, vocab_size: int, embed_size: int, dropout: float) -> None:
         super(BOWEncoder, self).__init__()
+        self.embed_size = embed_size
         self.embedding = nn.Embedding(num_embeddings=vocab_size, embedding_dim=embed_size)
         self.dropout = dropout
+
+    @property
+    def output_size(self) -> int:
+        return self.embed_size
 
     def forward(self, src: torch.Tensor) -> torch.Tensor:
         """

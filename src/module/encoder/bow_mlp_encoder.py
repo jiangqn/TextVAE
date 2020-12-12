@@ -13,6 +13,7 @@ class BOWMLPEncoder(Encoder):
     def __init__(self, vocab_size: int, embed_size: int, hidden_size: int, dropout: float) -> None:
         super(BOWMLPEncoder, self).__init__()
         self.embedding = nn.Embedding(num_embeddings=vocab_size, embedding_dim=embed_size)
+        self.hidden_size = hidden_size
         self.mlp = nn.Sequential(
             nn.Linear(embed_size, hidden_size),
             nn.ReLU(),
@@ -20,6 +21,10 @@ class BOWMLPEncoder(Encoder):
             nn.Linear(hidden_size, hidden_size)
         )
         self.dropout = dropout
+
+    @property
+    def output_size(self) -> int:
+        return self.hidden_size
 
     def forward(self, src: torch.Tensor) -> torch.Tensor:
         """

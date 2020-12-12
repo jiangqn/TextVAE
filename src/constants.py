@@ -7,3 +7,5 @@ UNK = '<unk>'
 PAD = '<pad>'
 SOS = '<sos>'
 EOS = '<eos>'
+
+INF = 1e9

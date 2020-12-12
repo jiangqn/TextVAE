@@ -16,16 +16,20 @@ class ConvEncoder(Encoder):
         self.embedding = nn.Embedding(num_embeddings=vocab_size, embedding_dim=embed_size)
         self.conv_layers = nn.ModuleList()
         self.layer_norms = nn.ModuleList()
-        feature_size = len(kernel_sizes) * kernel_num
+        self.feature_size = len(kernel_sizes) * kernel_num
         for i in range(num_layers):
             self.conv_layers.append(ConvEncoderLayer(
-                input_size=embed_size if i == 0 else feature_size,
+                input_size=embed_size if i == 0 else self.feature_size,
                 kernel_sizes=kernel_sizes,
                 kernel_num=kernel_num,
                 dropout=dropout
             ))
-            self.layer_norms.append(nn.LayerNorm(feature_size))
+            self.layer_norms.append(nn.LayerNorm(self.feature_size))
         self.dropout = dropout
+
+    @property
+    def output_size(self) -> int:
+        return self.feature_size
 
     def forward(self, src: torch.Tensor) -> torch.Tensor:
         """

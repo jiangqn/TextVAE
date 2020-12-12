@@ -32,6 +32,21 @@ class GRUDecoder(Decoder):
         if weight_tying:
             self.generator.weight = self.embedding.weight
 
+    def _initial_hidden(self, latent_variable: torch.Tensor) -> torch.Tensor:
+        """
+        :param latent_variable: torch.FloatTensor (batch_size, latent_size)
+        :return initial_hidden: torch.FloatTensor (num_layers, batch_size, hidden_size)
+        """
+        batch_size = latent_variable.size(0)
+        if self.initial_hidden_type == "zero":
+            initial_hidden = torch.zeros(size=(self.num_layers, batch_size, self.hidden_size),
+                                         device=latent_variable.device)
+        else:
+            initial_hidden = self.latent_projection(
+                latent_variable)  # torch.FloatTensor (batch_size, num_layers, hidden_size)
+            initial_hidden = initial_hidden.reshape(batch_size, self.num_layers, self.hidden_size).transpose(0, 1)
+        return initial_hidden
+
     def forward(self, latent_variable: torch.Tensor, trg: torch.Tensor) -> torch.Tensor:
         """
         :param latent_variable: torch.FloatTensor (batch_size, latent_size)
@@ -39,50 +54,48 @@ class GRUDecoder(Decoder):
         :return logit: torch.FloatTensor (batch_size, seq_len, vocab_size)
         """
 
-        batch_size = latent_variable.size(0)
-        if self.initial_hidden_type == "zero":
-            initial_hidden = torch.zeros(size=(self.num_layers, batch_size, self.hidden_size), device=latent_variable.device)
-        else:
-            initial_hidden = self.latent_projection(latent_variable)    # torch.FloatTensor (batch_size, num_layers, hidden_size)
-            initial_hidden = initial_hidden.reshape(batch_size, self.num_layers, self.hidden_size).transpose(0, 1)
-        hidden = initial_hidden
+        hidden = self._initial_hidden(latent_variable)
 
         max_len = trg.size(1)
         logit = []
         for i in range(max_len):
-            hidden, token_logit = self.step(hidden, trg[:, i])
+            hidden, token_logit = self.step(hidden, trg[:, i], latent_variable)
             logit.append(token_logit)
         logit = torch.stack(logit, dim=1)
         return logit
 
-    def step(self, hidden: torch.Tensor, token: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+    def decode(self, latent_variable: torch.Tensor, max_len: int) -> torch.Tensor:
         """
-        :param hidden: torch.FloatTensor (num_layers, batch_size, hidden_size)
-        :param token: torch.LongTensor (batch_size,)
-        :return hidden: torch.FloatTensor (num_layers, batch_size, hidden_size)
-        :return token_logit: torch.FloatTensor (batch_size, logit)
-        """
-        token_embedding = self.embedding(token.unsqueeze(0)).squeeze(0)
-        hidden = self.rnn_cell(token_embedding, hidden)
-        top_hidden = hidden[-1]
-        output = self.output_projection(top_hidden)
-        token_logit = self.generator(output)
-        return hidden, token_logit
-
-    def decode(self, hidden: torch.Tensor, max_len: int) -> torch.Tensor:
-        """
-        :param hidden: torch.FloatTensor (num_layers, batch_size, hidden_size)
+        :param latent_variable: torch.FloatTensor (batch_size, latent_size)
         :param max_len: int
-        :return logit: torch.FloatTensor (batch_size, seq_len, vocab_size)
+        :return logit: torch.FloatTensor (batch_size, max_len, vocab_size)
         """
-        batch_size = hidden.size(1)
-        token = torch.tensor([SOS_INDEX] * batch_size, dtype=torch.long, device=hidden.device)
+
+        hidden = self._initial_hidden(latent_variable)
+
+        batch_size = latent_variable.size(0)
+        token = torch.tensor([SOS_INDEX] * batch_size, dtype=torch.long, device=latent_variable.device)
         logit = []
         for i in range(max_len):
-            hidden, token_logit = self.step(hidden, token)
+            hidden, token_logit = self.step(hidden, token, latent_variable)
             if i == 0:
                 token_logit[:, EOS_INDEX] = 0
             token = token_logit.argmax(dim=-1)
             logit.append(token_logit)
         logit = torch.stack(logit, dim=1)
         return logit
+
+    def step(self, hidden: torch.Tensor, token: torch.Tensor, latent_variable: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+        """
+        :param hidden: torch.FloatTensor (num_layers, batch_size, hidden_size)
+        :param token: torch.LongTensor (batch_size,)
+        :param latent_variable: torch.FloatTensor (batch_size, latent_size)
+        :return hidden: torch.FloatTensor (num_layers, batch_size, hidden_size)
+        :return token_logit: torch.FloatTensor (batch_size, logit)
+        """
+        token_embedding = self.embedding(token.unsqueeze(0)).squeeze(0) # torch.FloatTensor (batch_size, embed_size)
+        hidden = self.rnn_cell(torch.cat((token_embedding, latent_variable), dim=1), hidden)
+        top_hidden = hidden[-1]
+        output = self.output_projection(top_hidden)
+        token_logit = self.generator(output)
+        return hidden, token_logit

@@ -14,5 +14,5 @@ class Encoder(nn.Module):
         raise NotImplementedError("The forward method in class Encoder is not implemented.")
 
     @property
-    def output_size(self):
+    def output_size(self) -> int:
         raise NotImplementedError("The @property output_size method in class Encoder is not implemented.")
