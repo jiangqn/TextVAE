@@ -8,7 +8,7 @@ from src.module.decoder.decoder import Decoder
 class GRUDecoder(Decoder):
 
     def __init__(self, vocab_size: int, embed_size: int, hidden_size: int, latent_size: int, 
-                 num_layers: int, dropout: float, weight_tying: bool, initial_hidden_type: str) -> None:
+                 num_layers: int, dropout: float, word_dropout: float, weight_tying: bool, initial_hidden_type: str) -> None:
         super(GRUDecoder, self).__init__()
         self.embedding = nn.Embedding(num_embeddings=vocab_size, embedding_dim=embed_size)
         assert initial_hidden_type in ["zero", "latent_projection"]
@@ -17,6 +17,7 @@ class GRUDecoder(Decoder):
             self.latent_projection = nn.Linear(latent_size, hidden_size * num_layers)
         self.hidden_size = hidden_size
         self.num_layers = num_layers
+        self.word_dropout = word_dropout
         self.rnn_cell = MultiLayerGRUCell(
             input_size=embed_size + latent_size,
             hidden_size=hidden_size,
@@ -53,6 +54,9 @@ class GRUDecoder(Decoder):
         :param trg: torch.LongTensor (batch_size, seq_len)
         :return logit: torch.FloatTensor (batch_size, seq_len, vocab_size)
         """
+
+        if self.training:
+            trg = self._word_dropout(trg)
 
         hidden = self._initial_hidden(latent_variable)
 

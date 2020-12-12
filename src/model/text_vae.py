@@ -7,7 +7,7 @@ from typing import Tuple
 
 class TextVAE(nn.Module):
 
-    def __init__(self, encoder: Encoder, decoder: Decoder, latent_size: int) -> None:
+    def __init__(self, encoder: Encoder, decoder: Decoder, latent_size: int, encoder_decoder_tying: bool) -> None:
         super(TextVAE, self).__init__()
         self.encoder = encoder
         self.decoder = decoder
@@ -15,6 +15,8 @@ class TextVAE(nn.Module):
         self.latent_size = latent_size
         self.posterior_mean_projection = nn.Linear(self.encoder_output_size, self.latent_size)
         self.posterior_std_projection = nn.Linear(self.encoder_output_size, self.latent_size)
+        if encoder_decoder_tying:
+            self.encoder.embedding.weight = self.decoder.embedding.weight
 
     def forward(self, src: torch.Tensor, trg: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """
@@ -56,6 +58,3 @@ class TextVAE(nn.Module):
         noise = torch.randn(size=posterior_mean.size(), device=posterior_mean.device)
         latent_variable = posterior_mean + posterior_std * noise
         return latent_variable
-
-def build_model(config: dict) -> TextVAE:
-    pass

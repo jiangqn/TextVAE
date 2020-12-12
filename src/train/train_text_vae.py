@@ -7,7 +7,8 @@ from torch.utils.tensorboard import SummaryWriter
 import logging
 import pickle
 import numpy as np
-from src.model.text_vae import build_model
+import math
+from src.model.build_model import build_model
 from src.constants import PAD_INDEX, SOS, EOS
 from src.train.eval import eval_text_vae
 from src.utils.gaussian_kldiv import GaussianKLDiv
@@ -21,7 +22,7 @@ def train_text_vae(config: dict) -> None:
     logger = logging.getLogger(__name__)
 
     base_path = config["base_path"]
-    save_path = os.path.join(base_path, "vae.pkl")
+    save_path = os.path.join(base_path, "text_vae.pkl")
     language_model_path = os.path.join(base_path, "language_model.pkl")
     vocab_path = os.path.join(base_path, "vocab.pkl")
     embedding_path = os.path.join(base_path, "embedding.npy")
@@ -34,7 +35,8 @@ def train_text_vae(config: dict) -> None:
 
     max_len = config["max_len"]
 
-    config = config["vae"]
+    config = config["text_vae"]
+    train_config = config["training"]
 
     logger.info("build dataset")
 
@@ -56,30 +58,20 @@ def train_text_vae(config: dict) -> None:
 
     logger.info("build data iterator")
     device = torch.device("cuda:0")
-    train_iter = Iterator(train_data, batch_size=config["batch_size"], shuffle=True, device=device)
-    dev_iter = Iterator(dev_data, batch_size=config["batch_size"], shuffle=False, device=device)
+    train_iter = Iterator(train_data, batch_size=train_config["batch_size"], shuffle=True, device=device)
+    dev_iter = Iterator(dev_data, batch_size=train_config["batch_size"], shuffle=False, device=device)
 
-    logger.info("build old_model")
-    # model = TextVAE(
-    #     vocab_size=vocab_size,
-    #     embed_size=config["embed_size"],
-    #     hidden_size=config["hidden_size"],
-    #     num_layers=config["num_layers"],
-    #     dropout=config["dropout"],
-    #     word_dropout=config["word_dropout"],
-    #     enc_dec_tying=config["enc_dec_tying"],
-    #     dec_gen_tying=config["dec_gen_tying"]
-    # )
+    logger.info("build model")
     model = build_model(config)
-    model.load_pretrained_embeddings(path=embedding_path)
+    # model.load_pretrained_embeddings(path=embedding_path)
 
-    logger.info("transfer old_model to GPU")
+    logger.info("transfer model to GPU")
     model = model.to(device)
 
     logger.info("set up criterion and optimizer")
     criterion = nn.CrossEntropyLoss(ignore_index=PAD_INDEX)
     kldiv = GaussianKLDiv()
-    optimizer = optim.Adam(model.parameters(), lr=config["lr"], weight_decay=config["weight_decay"])
+    optimizer = optim.Adam(model.parameters(), lr=train_config["lr"], weight_decay=train_config["weight_decay"])
 
     logger.info("start train")
 
@@ -104,6 +96,8 @@ def train_text_vae(config: dict) -> None:
         correct_tokens = 0
         total_ce_loss = 0
         total_kl_loss = 0
+        total_elbo = 0
+        total_loss = 0
 
         for i, batch in enumerate(train_iter):
 
@@ -117,13 +111,14 @@ def train_text_vae(config: dict) -> None:
             pad = torch.zeros(size=(batch_size, 1), dtype=torch.long, device=sentence.device)
             trg_output = torch.cat((sentence[:, 1:], pad), dim=-1)
 
-            logit, mean, std = model(src, trg_input)
+            logit, posterior_mean, posterior_std = model(src, trg_input)
             trg_output = trg_output.view(-1)
             output_size = logit.size(-1)
             logit = logit.view(-1, output_size)
 
             ce_loss = criterion(logit, trg_output)
-            kl_loss = kldiv(mean, std)
+            kl_loss = kldiv(posterior_mean, posterior_std)
+            elbo = ce_loss + kl_loss
             loss = ce_loss + kl_loss * kl_annealer.linear_anneal(global_step)
             loss.backward()
             nn.utils.clip_grad_norm_(model.parameters(), config["clip_grad_norm"])
@@ -137,13 +132,19 @@ def train_text_vae(config: dict) -> None:
 
             total_ce_loss += token_num * ce_loss.item()
             total_kl_loss += batch_size * kl_loss.item()
+            total_elbo += batch_size * elbo
+
             prediction = logit.argmax(dim=-1)
             correct_tokens += (prediction.masked_select(mask) == trg_output.masked_select(mask)).long().sum().item()
 
             if i % config["eval_freq"] == 0:
+
                 train_wer = 1 - correct_tokens / total_tokens
                 train_ce_loss = total_ce_loss / total_tokens
                 train_kl_loss = total_kl_loss / total_samples
+                train_elbo = total_elbo / total_samples
+
+
                 correct_tokens = 0
                 total_ce_loss = 0
                 total_kl_loss = 0

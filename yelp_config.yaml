@@ -55,21 +55,31 @@ text_vae:
       output_type: "final_hidden"
     lstm_encoder:
       embed_size: 300
+      hidden_size: 300
+      num_layers: 1
+      bidirectional: True
+      dropout: 0.5
+      output_type: "final_hidden"
   decoder:
     decoder_type: "gru_decoder"
-  num_layers: 2
-  dropout: 0.5
-  word_dropout: 0.5
-  enc_dec_tying: True
-  dec_gen_tying: True
-  batch_size: 64
-  beta: 0.05
-  lr: 0.001
-  weight_decay: 0
-  epoches: 2
-  eval_freq: 100
-  clip_grad_norm: 5.0
-  anneal_step: 1000
+    gru_decoder:
+      embed_size: 300
+      hidden_size: 300
+      num_layers: 1
+      dropout: 0.5
+      word_dropout: 0.5
+      decoder_generator_tying: True
+    latent_size: 32
+  encoder_decoder_tying: True
+  training:
+    batch_size: 64
+    beta: 1
+    lr: 0.001
+    weight_decay: 0
+    epoches: 2
+    eval_freq: 100
+    clip_grad_norm: 5.0
+    anneal_step: 1000
 vanilla_sample:
   sample_num: 100000
   save_encoding: True
