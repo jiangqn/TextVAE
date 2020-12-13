@@ -53,6 +53,7 @@ def build_encoder(encoder_config: dict) -> Encoder:
 
 def build_decoder(decoder_config: dict) -> Decoder:
     vocab_size = decoder_config["vocab_size"]
+    latent_size = decoder_config["latent_size"]
     decoder_type = decoder_config["decoder_type"]
     decoder_config = decoder_config[decoder_type]
     if decoder_type == "gru_decoder":
@@ -60,11 +61,11 @@ def build_decoder(decoder_config: dict) -> Decoder:
             vocab_size=vocab_size,
             embed_size=decoder_config["embed_size"],
             hidden_size=decoder_config["hidden_size"],
-            latent_size=decoder_config["latent_size"],
+            latent_size=latent_size,
             num_layers=decoder_config["num_layers"],
             dropout=decoder_config["dropout"],
             word_dropout=decoder_config["word_dropout"],
-            weight_tying=decoder_config["weight_tying"],
+            decoder_generator_tying=decoder_config["decoder_generator_tying"],
             initial_hidden_type=decoder_config["initial_hidden_type"]
         )
     else:

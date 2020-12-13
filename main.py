@@ -4,7 +4,7 @@ import os
 from src.utils.set_seed import set_seed
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--model', type=str, default='vae', choices=['vae', 'text_cnn', 'lm'])
+parser.add_argument('--model', type=str, default='text_vae', choices=['text_vae', 'text_cnn', 'lm'])
 parser.add_argument('--task', type=str, default='train', choices=['preprocess', 'train', 'test', 'vanilla_sample', 'get_features', 'correlation',
         'visualize', 'pca_visualize', 'tsne_visualize', 'linear_separate', 'categorical_sample', 'compute_projection_statistics', 'sentiment_sample', 'length_sample', 'depth_sample',
         'test_vae_encoding', 'sentiment_transfer', 'eval_reverse_ppl', 'measure_disentanglement', 'length_interpolate'])
@@ -21,7 +21,7 @@ set_seed(config['seed'])
 if args.task == 'preprocess':
     from src.train.preprocess import preprocess
     preprocess(config)
-elif args.model == 'vae':
+elif args.model == 'text_vae':
     if args.task == 'train':
         from src.train.train_text_vae import train_text_vae
         train_text_vae(config)

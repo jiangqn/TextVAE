@@ -53,6 +53,7 @@ def train_text_vae(config: dict) -> None:
     TEXT.vocab = vocab
     vocab_size = len(vocab.itos)
     logger.info("vocab_size: %d" % vocab_size)
+    config["vocab_size"] = vocab_size
 
     language_model = torch.load(language_model_path)
 
@@ -70,12 +71,12 @@ def train_text_vae(config: dict) -> None:
 
     logger.info("set up criterion and optimizer")
     criterion = nn.CrossEntropyLoss(ignore_index=PAD_INDEX)
-    kldiv = GaussianKLDiv()
+    kldiv = GaussianKLDiv(reduction="mean")
     optimizer = optim.Adam(model.parameters(), lr=train_config["lr"], weight_decay=train_config["weight_decay"])
 
     logger.info("start train")
 
-    kl_annealer = KLAnnealer(beta=config["beta"], anneal_step=config["anneal_step"])
+    kl_annealer = KLAnnealer(beta=train_config["beta"], anneal_step=train_config["anneal_step"])
 
     # min_total_ppl = 1e9
     min_dev_loss = 1e9
@@ -88,7 +89,7 @@ def train_text_vae(config: dict) -> None:
 
     global_step = 0 # min(globel_step, config["anneal_step"]) / config["anneal_step"]
 
-    for epoch in range(config["epoches"]):
+    for epoch in range(train_config["epoches"]):
 
         total_tokens = 0
         total_samples = 0
@@ -96,7 +97,7 @@ def train_text_vae(config: dict) -> None:
         correct_tokens = 0
         total_ce_loss = 0
         total_kl_loss = 0
-        total_elbo = 0
+        total_nll = 0
         total_loss = 0
 
         for i, batch in enumerate(train_iter):
@@ -118,10 +119,10 @@ def train_text_vae(config: dict) -> None:
 
             ce_loss = criterion(logit, trg_output)
             kl_loss = kldiv(posterior_mean, posterior_std)
-            elbo = ce_loss + kl_loss
+            nll = ce_loss + kl_loss
             loss = ce_loss + kl_loss * kl_annealer.linear_anneal(global_step)
             loss.backward()
-            nn.utils.clip_grad_norm_(model.parameters(), config["clip_grad_norm"])
+            nn.utils.clip_grad_norm_(model.parameters(), train_config["clip_grad_norm"])
             optimizer.step()
             global_step += 1
 
@@ -132,17 +133,17 @@ def train_text_vae(config: dict) -> None:
 
             total_ce_loss += token_num * ce_loss.item()
             total_kl_loss += batch_size * kl_loss.item()
-            total_elbo += batch_size * elbo
+            total_nll += batch_size * nll
 
             prediction = logit.argmax(dim=-1)
             correct_tokens += (prediction.masked_select(mask) == trg_output.masked_select(mask)).long().sum().item()
 
-            if i % config["eval_freq"] == 0:
+            if i % train_config["eval_freq"] == 0:
 
                 train_wer = 1 - correct_tokens / total_tokens
                 train_ce_loss = total_ce_loss / total_tokens
                 train_kl_loss = total_kl_loss / total_samples
-                train_elbo = total_elbo / total_samples
+                train_nll = total_nll / total_samples
 
 
                 correct_tokens = 0
@@ -152,8 +153,10 @@ def train_text_vae(config: dict) -> None:
                 total_samples = 0
 
                 dev_ce_loss, dev_kl_loss, dev_wer, sample_ppl = eval_text_vae(model, dev_iter, base_path, language_model=language_model, max_len=max_len)
-                logger.info("[epoch %2d step %4d]\tdev_ce_loss: %.4f dev_kl_loss: %.4f dev_ppl: %.4f dev_wer: %.4f sample_ppl: %.4f"
-                            % (epoch, i, dev_ce_loss, dev_kl_loss, 2 ** dev_ce_loss, dev_wer, sample_ppl))
+                dev_loss = dev_ce_loss + dev_kl_loss * kl_annealer.linear_anneal(global_step)
+                dev_nll = dev_ce_loss + dev_kl_loss
+                logger.info("[epoch %2d step %4d]\tdev_ce_loss: %.4f dev_kl_loss: %.4f dev_nll: %.4f dev_ppl: %.4f dev_wer: %.4f sample_ppl: %.4f"
+                            % (epoch, i, dev_ce_loss, dev_kl_loss, dev_nll, math.exp(dev_nll), dev_wer, sample_ppl))
 
                 writer.add_scalar("kl_weight", kl_annealer.linear_anneal(global_step), global_step)
 
@@ -178,8 +181,8 @@ def train_text_vae(config: dict) -> None:
                 writer.add_scalars(
                     "ppl",
                     {
-                        "train_ppl": 2 ** train_ce_loss,
-                        "dev_ppl": 2 ** dev_ce_loss
+                        "train_ppl": math.exp(train_nll),
+                        "dev_ppl": math.exp(dev_nll)
                     },
                     global_step
                 )
@@ -195,11 +198,11 @@ def train_text_vae(config: dict) -> None:
 
                 writer.add_scalar("sample_ppl", sample_ppl, global_step)
 
-                dev_loss = dev_ce_loss + dev_kl_loss * config["beta"]
                 if global_step >= 1000 and dev_loss < min_dev_loss:
                     min_dev_loss = dev_loss
                     corr_ce_loss = dev_ce_loss
                     corr_kl_loss = dev_kl_loss
+                    corr_nll = dev_ce_loss + dev_kl_loss
                     corr_wer = dev_wer
                     corr_sample_ppl = sample_ppl
                     corr_epoch = epoch
@@ -207,5 +210,5 @@ def train_text_vae(config: dict) -> None:
                     torch.save(model, save_path)
 
     logger.info("[best checkpoint] at [epoch %2d step %4d] dev_ce_loss: %.4f dev_kl_loss: %.4f dev_ppl: %.4f dev_wer: %.4f sample_ppl: %.4f"
-                % (corr_epoch, corr_step, corr_ce_loss, corr_kl_loss, 2 ** corr_ce_loss, corr_wer, corr_sample_ppl))
+                % (corr_epoch, corr_step, corr_ce_loss, corr_kl_loss, math.exp(corr_nll), corr_wer, corr_sample_ppl))
     logger.info("finish")

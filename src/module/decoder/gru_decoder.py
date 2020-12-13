@@ -1,14 +1,14 @@
 import torch
 from torch import nn
 from typing import List, Tuple
-from src.old_model.multi_layer_gru_cell import MultiLayerGRUCell
+from src.module.rnn_cell.multi_layer_gru_cell import MultiLayerGRUCell
 from src.constants import SOS_INDEX, EOS_INDEX
 from src.module.decoder.decoder import Decoder
 
 class GRUDecoder(Decoder):
 
     def __init__(self, vocab_size: int, embed_size: int, hidden_size: int, latent_size: int, 
-                 num_layers: int, dropout: float, word_dropout: float, weight_tying: bool, initial_hidden_type: str) -> None:
+                 num_layers: int, dropout: float, word_dropout: float, decoder_generator_tying: bool, initial_hidden_type: str) -> None:
         super(GRUDecoder, self).__init__()
         self.embedding = nn.Embedding(num_embeddings=vocab_size, embedding_dim=embed_size)
         assert initial_hidden_type in ["zero", "latent_projection"]
@@ -30,7 +30,7 @@ class GRUDecoder(Decoder):
             nn.Linear(hidden_size, embed_size)
         )
         self.generator = nn.Linear(embed_size, vocab_size)
-        if weight_tying:
+        if decoder_generator_tying:
             self.generator.weight = self.embedding.weight
 
     def _initial_hidden(self, latent_variable: torch.Tensor) -> torch.Tensor:

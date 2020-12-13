@@ -64,7 +64,7 @@ class GRUEncoder(Encoder):
         packed_output, final_hidden = self.rnn(packed_src)
 
         # unpack (pad) and reorder
-        output = pad_packed_sequence(packed_output, batch_first=True)   # torch.FloatTensor (batch_size, seq_len, output_size)
+        output = pad_packed_sequence(packed_output, batch_first=True)[0]   # torch.FloatTensor (batch_size, seq_len, output_size)
         reorder_index = sort_index.argsort(descending=False)
         final_hidden = final_hidden.index_select(dim=1, index=reorder_index)    # torch.FloatTensor (num_layers * num_directions, batch_size, hidden_size)
         output = output.index_select(dim=0, index=reorder_index)    # torch.FloatTensor (batch_size, seq_len, num_directions * hidden_size)
@@ -72,7 +72,7 @@ class GRUEncoder(Encoder):
         #final_hidden = torch.cat(final_hidden.chunk(chunks=2, dim=0), dim=2)
 
         final_hidden = final_hidden.reshape(self.num_layers, self.num_directions, batch_size, self.hidden_size)
-        final_hidden = torch.cat([final_hidden[:, i, :, :] for i in range(self.num_directions)], dim=-1)
+        final_hidden = torch.cat([final_hidden[:, i, :, :] for i in range(self.num_directions)], dim=-1)[0]
 
         if self.output_type == "final_hidden":
             encoder_output = final_hidden
