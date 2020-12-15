@@ -11,10 +11,14 @@ import math
 from src.model.build_model import build_model
 from src.constants import PAD_INDEX, SOS, EOS
 from src.train.eval import eval_text_vae
+from src.train.eval_reverse_ppl import eval_reverse_ppl
 from src.utils.gaussian_kldiv import GaussianKLDiv
 from src.utils.kl_anneal import KLAnnealer
+from copy import deepcopy
 
 def train_text_vae(config: dict) -> None:
+
+    config_copy = deepcopy(config)
 
     os.environ["CUDA_VISIBLE_DEVICES"] = str(config["gpu"])
 
@@ -214,6 +218,7 @@ def train_text_vae(config: dict) -> None:
                     corr_step = i
                     torch.save(model, save_path)
 
-    logger.info("[best checkpoint] at [epoch %2d step %4d] dev_ce_loss: %.4f dev_kl_loss: %.4f dev_ppl: %.4f dev_wer: %.4f sample_ppl: %.4f"
-                % (corr_epoch, corr_step, corr_ce_loss, corr_kl_loss, math.exp(corr_nll), corr_wer, corr_sample_ppl))
+    reverse_ppl = eval_reverse_ppl(config_copy)
+    logger.info("[best checkpoint] at [epoch %2d step %4d] dev_ce_loss: %.4f dev_kl_loss: %.4f dev_ppl: %.4f dev_wer: %.4f forward_ppl: %.4f reverse_ppl: %.4f"
+                % (corr_epoch, corr_step, corr_ce_loss, corr_kl_loss, math.exp(corr_nll), corr_wer, corr_sample_ppl, reverse_ppl))
     logger.info("finish")

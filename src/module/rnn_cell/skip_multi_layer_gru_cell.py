@@ -18,8 +18,8 @@ class SkipMultiLayerGRUCell(nn.Module):
 
     def forward(self, input: torch.Tensor, states: torch.Tensor, latent_variable: torch.Tensor) -> torch.Tensor:
         """
-        :param input: torch.FloatTensor (batch_size, seq_len, input_size)
-        :param latent_variable: torch.FloatTensor (batch_size, seq_len, latent_size)
+        :param input: torch.FloatTensor (batch_size, input_size)
+        :param latent_variable: torch.FloatTensor (batch_size, latent_size)
         :param states: torch.FloatTensor (num_layers, batch_size, hidden_size)
         :return output_hidden: torch.FloatTensor (num_layers, batch_size, hidden_size)
         """

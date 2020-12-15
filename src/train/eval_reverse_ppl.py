@@ -15,36 +15,36 @@ import math
 
 def eval_reverse_ppl(config: dict, sample_path: str = None) -> float:
 	
-	os.environ['CUDA_VISIBLE_DEVICES'] = str(config['gpu'])
+	os.environ["CUDA_VISIBLE_DEVICES"] = str(config["gpu"])
 
 	logging.basicConfig(level=logging.DEBUG,
-						format='%(asctime)s - %(message)s', datefmt='%d-%b-%y %H:%M:%S')
+						format="%(asctime)s - %(message)s", datefmt="%d-%b-%y %H:%M:%S")
 	logger = logging.getLogger(__name__)
 
-	base_path = config['base_path']
-	vocab_path = os.path.join(base_path, 'vocab.pkl')
-	embedding_path = os.path.join(base_path, 'embedding.npy')
-	save_path = os.path.join(base_path, 'reverse_ppl_language_model.pkl')
+	base_path = config["base_path"]
+	vocab_path = os.path.join(base_path, "vocab.pkl")
+	embedding_path = os.path.join(base_path, "embedding.npy")
+	save_path = os.path.join(base_path, "reverse_ppl_language_model.pkl")
 
-	with open(vocab_path, 'rb') as handle:
+	with open(vocab_path, "rb") as handle:
 		vocab = pickle.load(handle)
 
 	if sample_path == None:
 	
-		reverse_ppl_sample_path = os.path.join(base_path, 'reverse_ppl_sample.tsv')
-		vae_path = os.path.join(base_path, 'vae.pkl')
+		reverse_ppl_sample_path = os.path.join(base_path, "reverse_ppl_sample.tsv")
+		vae_path = os.path.join(base_path, "text_vae.pkl")
 
 		vae = torch.load(vae_path)
 
-		reverse_ppl_sample_num = config['vanilla_sample']['sample_num']
+		reverse_ppl_sample_num = config["vanilla_sample"]["sample_num"]
 
-		batch_size = config['vae']['batch_size']
+		batch_size = config["vae"]["batch_size"]
 
 		batch_sizes = [batch_size] * (reverse_ppl_sample_num // batch_size) + ([reverse_ppl_sample_num % batch_size] if reverse_ppl_sample_num % batch_size != 0 else [])
 
-		sentences = ['sentence']
+		sentences = ["sentence"]
 
-		logger.info('sample')
+		logger.info("sample")
 
 		for batch_size in batch_sizes:
 			output = vae.sample(num=batch_size)
@@ -52,8 +52,8 @@ def eval_reverse_ppl(config: dict, sample_path: str = None) -> float:
 
 		sentences = [[sentence] for sentence in sentences]
 
-		with open(reverse_ppl_sample_path, 'w') as f:
-			writer = csv.writer(f, delimiter='\t')
+		with open(reverse_ppl_sample_path, "w") as f:
+			writer = csv.writer(f, delimiter="\t")
 			writer.writerows(sentences)
 
 	else:
@@ -61,45 +61,45 @@ def eval_reverse_ppl(config: dict, sample_path: str = None) -> float:
 		reverse_ppl_sample_path = sample_path
 	
 	TEXT = data.Field(sequential=True, lower=True, batch_first=True, init_token=SOS, eos_token=EOS)
-	fields = [('sentence', TEXT)]
+	fields = [("sentence", TEXT)]
 
-	config = config['language_model']
+	config = config["language_model"]
 
 	train_path = reverse_ppl_sample_path
-	dev_path = os.path.join(base_path, 'dev.tsv')
-	test_path = os.path.join(base_path, 'test.tsv')
+	dev_path = os.path.join(base_path, "dev.tsv")
+	test_path = os.path.join(base_path, "test.tsv")
 
-	train_data = TabularDataset(path=train_path, format='tsv', skip_header=True, fields=fields)
-	dev_data = TabularDataset(path=dev_path, format='tsv', skip_header=True, fields=fields)
-	test_data = TabularDataset(path=test_path, format='tsv', skip_header=True, fields=fields)
+	train_data = TabularDataset(path=train_path, format="tsv", skip_header=True, fields=fields)
+	dev_data = TabularDataset(path=dev_path, format="tsv", skip_header=True, fields=fields)
+	test_data = TabularDataset(path=test_path, format="tsv", skip_header=True, fields=fields)
 	TEXT.vocab = vocab
 	vocab_size = len(vocab.itos)
 	
-	device = torch.device('cuda:0')
-	train_iter = Iterator(train_data, batch_size=config['batch_size'], shuffle=True, device=device)
-	dev_iter = Iterator(dev_data, batch_size=config['batch_size'], shuffle=False, device=device)
-	test_iter = Iterator(test_data, batch_size=config['batch_size'], shuffle=False, device=device)
+	device = torch.device("cuda:0")
+	train_iter = Iterator(train_data, batch_size=config["batch_size"], shuffle=True, device=device)
+	dev_iter = Iterator(dev_data, batch_size=config["batch_size"], shuffle=False, device=device)
+	test_iter = Iterator(test_data, batch_size=config["batch_size"], shuffle=False, device=device)
 
 	model = LanguageModel(
 		vocab_size=vocab_size,
-		embed_size=config['embed_size'],
-		hidden_size=config['hidden_size'],
-		num_layers=config['num_layers'],
-		dropout=config['dropout'],
-		weight_tying=config['weight_tying']
+		embed_size=config["embed_size"],
+		hidden_size=config["hidden_size"],
+		num_layers=config["num_layers"],
+		dropout=config["dropout"],
+		weight_tying=config["weight_tying"]
 	)
 	model.load_pretrained_embeddings(path=embedding_path)
 
 	model = model.to(device)
 
 	criterion = nn.CrossEntropyLoss(ignore_index=PAD_INDEX)
-	optimizer = optim.Adam(model.parameters(), lr=config['lr'], weight_decay=config['weight_decay'])
+	optimizer = optim.Adam(model.parameters(), lr=config["lr"], weight_decay=config["weight_decay"])
 
 	min_dev_loss = 1e9
 	patience = 0
 	max_patience = 20
 
-	for epoch in range(config['epoches']):
+	for epoch in range(config["epoches"]):
 
 		total_tokens = 0
 		total_loss = 0
@@ -121,7 +121,7 @@ def eval_reverse_ppl(config: dict, sample_path: str = None) -> float:
 			logit = logit.view(-1, output_size)
 			loss = criterion(logit, output_sentence)
 			loss.backward()
-			nn.utils.clip_grad_norm_(model.parameters(), config['clip_grad_norm'])
+			nn.utils.clip_grad_norm_(model.parameters(), config["clip_grad_norm"])
 			optimizer.step()
 
 			mask = (output_sentence != PAD_INDEX)
@@ -129,12 +129,12 @@ def eval_reverse_ppl(config: dict, sample_path: str = None) -> float:
 			total_tokens += token_num
 			total_loss += token_num * loss.item()
 
-			if i % config['eval_freq'] == 0:
+			if i % config["eval_freq"] == 0:
 				train_loss = total_loss / total_tokens
 				total_loss = 0
 				total_tokens = 0
 				dev_loss = eval_language_model(model, dev_iter, criterion)
-				# logger.info('[epoch %2d step %4d]\ttrain_loss: %.4f train_ppl: %.4f dev_loss: %.4f dev_ppl: %.4f' %
+				# logger.info("[epoch %2d step %4d]\ttrain_loss: %.4f train_ppl: %.4f dev_loss: %.4f dev_ppl: %.4f" %
 				# 			(epoch, i, train_loss, 2 ** train_loss, dev_loss, 2 ** dev_loss))
 
 				if dev_loss < min_dev_loss:
@@ -150,11 +150,11 @@ def eval_reverse_ppl(config: dict, sample_path: str = None) -> float:
 		if patience == max_patience:
 			break
 
-	# logger.info('dev_loss: %.4f\tdev_ppl: %.4f' % (min_dev_loss, 2 ** min_dev_loss))
+	# logger.info("dev_loss: %.4f\tdev_ppl: %.4f" % (min_dev_loss, 2 ** min_dev_loss))
 
 	model = torch.load(save_path)
 	test_loss = eval_language_model(model, test_iter, criterion)
-	# logger.info('test_loss: %.4f\ttest_ppl: %.4f' % (test_loss, 2 ** test_loss))
+	# logger.info("test_loss: %.4f\ttest_ppl: %.4f" % (test_loss, 2 ** test_loss))
 
 	os.remove(save_path)
 
