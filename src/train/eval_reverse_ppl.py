@@ -11,6 +11,7 @@ from src.model.language_model import LanguageModel
 from src.utils.convert_tensor_to_texts import convert_tensor_to_texts
 from src.constants import SOS, EOS, PAD_INDEX
 from src.train.eval import eval_language_model
+import math
 
 def eval_reverse_ppl(config: dict, sample_path: str = None) -> float:
 	
@@ -157,5 +158,5 @@ def eval_reverse_ppl(config: dict, sample_path: str = None) -> float:
 
 	os.remove(save_path)
 
-	test_ppl = 2 ** test_loss
+	test_ppl = math.exp(test_loss)
 	return test_ppl

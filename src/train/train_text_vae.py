@@ -82,6 +82,7 @@ def train_text_vae(config: dict) -> None:
     min_dev_loss = 1e9
     corr_ce_loss = 1e9
     corr_kl_loss = 1e9
+    corr_nll = 1e9
     corr_wer = 1
     corr_sample_ppl = 1e9
     corr_epoch = 0
@@ -149,14 +150,18 @@ def train_text_vae(config: dict) -> None:
                 correct_tokens = 0
                 total_ce_loss = 0
                 total_kl_loss = 0
+                total_nll = 0
                 total_tokens = 0
                 total_samples = 0
 
                 dev_ce_loss, dev_kl_loss, dev_wer, sample_ppl = eval_text_vae(model, dev_iter, base_path, language_model=language_model, max_len=max_len)
                 dev_loss = dev_ce_loss + dev_kl_loss * kl_annealer.linear_anneal(global_step)
                 dev_nll = dev_ce_loss + dev_kl_loss
+                logger.info(
+                    "[epoch %2d step %4d]\ttrain_ce_loss: %.4f train_kl_loss: %.4f train_nll: %.4f train_ppl: %.4f train_wer: %.4f"
+                    % (epoch, i, train_ce_loss, train_kl_loss, train_nll, 0, train_wer))
                 logger.info("[epoch %2d step %4d]\tdev_ce_loss: %.4f dev_kl_loss: %.4f dev_nll: %.4f dev_ppl: %.4f dev_wer: %.4f sample_ppl: %.4f"
-                            % (epoch, i, dev_ce_loss, dev_kl_loss, dev_nll, math.exp(dev_nll), dev_wer, sample_ppl))
+                            % (epoch, i, dev_ce_loss, dev_kl_loss, dev_nll, 0, dev_wer, sample_ppl))
 
                 writer.add_scalar("kl_weight", kl_annealer.linear_anneal(global_step), global_step)
 
@@ -181,8 +186,8 @@ def train_text_vae(config: dict) -> None:
                 writer.add_scalars(
                     "ppl",
                     {
-                        "train_ppl": math.exp(train_nll),
-                        "dev_ppl": math.exp(dev_nll)
+                        "train_ppl": 0,
+                        "dev_ppl": 0
                     },
                     global_step
                 )

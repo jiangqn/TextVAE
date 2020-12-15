@@ -110,7 +110,6 @@ def eval_text_vae(model, data_iter, base_path, **kwargs):
     ce_loss = total_ce_loss / total_tokens
     kl_loss = total_kl_loss / total_samples
     wer = 1 - correct_tokens / total_tokens
-    # sample_ppl = sample_eval_by_language_model(model, base_path, **kwargs)
-    sample_ppl = 0
+    sample_ppl = sample_eval_by_language_model(model, base_path, **kwargs)
 
     return ce_loss, kl_loss, wer, sample_ppl

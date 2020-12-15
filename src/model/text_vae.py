@@ -58,3 +58,28 @@ class TextVAE(nn.Module):
         noise = torch.randn(size=posterior_mean.size(), device=posterior_mean.device)
         latent_variable = posterior_mean + posterior_std * noise
         return latent_variable
+    
+    def sample(self, **kwargs):
+        """
+        :num: int
+        :latent_variable: torch.FloatTensor (sample_num, latent_size)
+        :output: torch.LongTensor (sample_num, max_len)
+        :logit: torch.FloatTensor (sample_num, max_len, vocab_size)
+        """
+
+        assert ("num" in kwargs) ^ ("latent_variable" in kwargs)
+        if "num" in kwargs:
+            latent_variable = torch.randn(size=(kwargs["num"], self.latent_size),
+                                   device=self.encoder.embedding.weight.device)
+        else:
+            latent_variable = kwargs["latent_variable"]
+        max_len = kwargs.get("max_len", 15)
+        logit = self.decoder.decode(latent_variable, max_len)
+        output = logit.argmax(dim=-1)
+        return_list = [output]
+        if kwargs.get("output_latent_variable", False):
+            latent_variable = latent_variable.cpu().numpy()
+            return_list.append(latent_variable)
+        if kwargs.get("output_logit", False):
+            return_list.append(logit)
+        return return_list[0] if len(return_list) == 1 else return_list

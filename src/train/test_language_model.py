@@ -6,6 +6,7 @@ import os
 import pickle
 from src.train.eval import eval_language_model
 from src.constants import SOS, EOS, PAD_INDEX
+import math
 
 def test_language_model(config: dict) -> None:
 
@@ -33,4 +34,4 @@ def test_language_model(config: dict) -> None:
     criterion = nn.CrossEntropyLoss(ignore_index=PAD_INDEX)
 
     test_loss = eval_language_model(model, test_iter, criterion)
-    print('test_loss: %.4f\ttest_ppl: %.4f' % (test_loss, 2 ** test_loss))
+    print('test_loss: %.4f\ttest_ppl: %.4f' % (test_loss, math.exp(test_loss)))

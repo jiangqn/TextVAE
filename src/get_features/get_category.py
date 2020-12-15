@@ -38,7 +38,7 @@ def get_categorical_features(model: nn.Module, data_iter: Iterator, **kwargs) ->
 
 def get_categorical_features_from_tsv(file_path, batch_size, **kwargs) -> list:
 
-    assert ('model_path' in kwargs) ^ ('old_model' in kwargs)
+    assert ('model_path' in kwargs) ^ ('model' in kwargs)
     assert ('vocab_path' in kwargs) ^ ('vocab' in kwargs)
 
     if 'model_path' in kwargs:

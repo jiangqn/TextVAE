@@ -12,9 +12,9 @@ class MultiLayerLSTMCell(nn.Module):
         self.num_layers = num_layers
         self.dropout = dropout
         self.bias = bias
-        self.lstm_cells = nn.ModuleList([nn.LSTMCell(input_size, hidden_size, bias)])
-        for _ in range(num_layers - 1):
-            self.lstm_cells.append(nn.LSTMCell(hidden_size, hidden_size, bias))
+        self.lstm_cells = nn.ModuleList(
+            [nn.LSTMCell(input_size, hidden_size, bias)] + [nn.LSTMCell(hidden_size, hidden_size, bias) for _ in range(num_layers - 1)]
+        )
 
     def forward(self, input: torch.Tensor, states: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
         """

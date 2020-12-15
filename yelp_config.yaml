@@ -74,13 +74,13 @@ text_vae:
   encoder_decoder_tying: True
   training:
     batch_size: 64
-    beta: 1
+    beta: 0.1
     lr: 0.001
     weight_decay: 0
     epoches: 2
     eval_freq: 100
     clip_grad_norm: 5.0
-    anneal_step: 2000
+    anneal_step: 3000
 vanilla_sample:
   sample_num: 100000
   save_encoding: True

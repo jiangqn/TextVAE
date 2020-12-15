@@ -32,20 +32,20 @@ def get_ppl(model: nn.Module, data_iter: Iterator) -> List[float]:
             output_sentence = output_sentence.reshape(batch_size, -1)
             mask = (output_sentence != PAD_INDEX).float()
             output_sentence_lens = mask.sum(dim=1, keepdim=False)
-            batch_ppl = torch.pow(2, (loss * mask).sum(dim=1, keepdim=False) / output_sentence_lens)
+            batch_ppl = torch.exp((loss * mask).sum(dim=1, keepdim=False) / output_sentence_lens)
             ppl.extend(batch_ppl.tolist())
 
     return ppl
 
 def get_ppl_from_tsv(file_path: str, batch_size: int = 64, **kwargs) -> List[float]:
 
-    assert ('model_path' in kwargs) ^ ('old_model' in kwargs)
+    assert ('model_path' in kwargs) ^ ('model' in kwargs)
     assert ('vocab_path' in kwargs) ^ ('vocab' in kwargs)
 
     if 'model_path' in kwargs:
         model = torch.load(kwargs['model_path'])
     else:
-        model = kwargs['old_model']
+        model = kwargs['model']
 
     if 'vocab_path' in kwargs:
         with open(kwargs['vocab_path'], 'rb') as handle:
