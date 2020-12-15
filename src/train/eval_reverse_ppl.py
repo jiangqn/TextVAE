@@ -38,7 +38,7 @@ def eval_reverse_ppl(config: dict, sample_path: str = None) -> float:
 
 		reverse_ppl_sample_num = config["vanilla_sample"]["sample_num"]
 
-		batch_size = config["vae"]["batch_size"]
+		batch_size = config["text_vae"]["training"]["batch_size"]
 
 		batch_sizes = [batch_size] * (reverse_ppl_sample_num // batch_size) + ([reverse_ppl_sample_num % batch_size] if reverse_ppl_sample_num % batch_size != 0 else [])
 
@@ -76,30 +76,30 @@ def eval_reverse_ppl(config: dict, sample_path: str = None) -> float:
 	vocab_size = len(vocab.itos)
 	
 	device = torch.device("cuda:0")
-	train_iter = Iterator(train_data, batch_size=config["batch_size"], shuffle=True, device=device)
-	dev_iter = Iterator(dev_data, batch_size=config["batch_size"], shuffle=False, device=device)
-	test_iter = Iterator(test_data, batch_size=config["batch_size"], shuffle=False, device=device)
+	train_iter = Iterator(train_data, batch_size=config["training"]["batch_size"], shuffle=True, device=device)
+	dev_iter = Iterator(dev_data, batch_size=config["training"]["batch_size"], shuffle=False, device=device)
+	test_iter = Iterator(test_data, batch_size=config["training"]["batch_size"], shuffle=False, device=device)
 
 	model = LanguageModel(
 		vocab_size=vocab_size,
-		embed_size=config["embed_size"],
-		hidden_size=config["hidden_size"],
-		num_layers=config["num_layers"],
-		dropout=config["dropout"],
-		weight_tying=config["weight_tying"]
+		embed_size=config["model"]["embed_size"],
+		hidden_size=config["model"]["hidden_size"],
+		num_layers=config["model"]["num_layers"],
+		dropout=config["model"]["dropout"],
+		weight_tying=config["model"]["weight_tying"]
 	)
 	model.load_pretrained_embeddings(path=embedding_path)
 
 	model = model.to(device)
 
 	criterion = nn.CrossEntropyLoss(ignore_index=PAD_INDEX)
-	optimizer = optim.Adam(model.parameters(), lr=config["lr"], weight_decay=config["weight_decay"])
+	optimizer = optim.Adam(model.parameters(), lr=config["training"]["lr"], weight_decay=config["training"]["weight_decay"])
 
 	min_dev_loss = 1e9
 	patience = 0
 	max_patience = 20
 
-	for epoch in range(config["epoches"]):
+	for epoch in range(config["training"]["epoches"]):
 
 		total_tokens = 0
 		total_loss = 0
@@ -121,7 +121,7 @@ def eval_reverse_ppl(config: dict, sample_path: str = None) -> float:
 			logit = logit.view(-1, output_size)
 			loss = criterion(logit, output_sentence)
 			loss.backward()
-			nn.utils.clip_grad_norm_(model.parameters(), config["clip_grad_norm"])
+			nn.utils.clip_grad_norm_(model.parameters(), config["training"]["clip_grad_norm"])
 			optimizer.step()
 
 			mask = (output_sentence != PAD_INDEX)
@@ -129,7 +129,7 @@ def eval_reverse_ppl(config: dict, sample_path: str = None) -> float:
 			total_tokens += token_num
 			total_loss += token_num * loss.item()
 
-			if i % config["eval_freq"] == 0:
+			if i % config["training"]["eval_freq"] == 0:
 				train_loss = total_loss / total_tokens
 				total_loss = 0
 				total_tokens = 0

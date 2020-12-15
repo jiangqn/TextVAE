@@ -4,6 +4,7 @@ import torch.nn.functional as F
 from src.module.encoder.encoder import Encoder
 from src.module.decoder.decoder import Decoder
 from typing import Tuple
+import numpy as np
 
 class TextVAE(nn.Module):
 
@@ -17,6 +18,15 @@ class TextVAE(nn.Module):
         self.posterior_std_projection = nn.Linear(self.encoder_output_size, self.latent_size)
         if encoder_decoder_tying:
             self.encoder.embedding.weight = self.decoder.embedding.weight
+
+    def load_pretrained_embeddings(self, **kwargs) -> None:
+        assert ("path" in kwargs) ^ ("embedding" in kwargs)
+        if "path" in kwargs:
+            embedding = np.load(kwargs["path"])
+        else:
+            embedding = kwargs["embedding"]
+        self.encoder.embedding.weight.data.copy_(torch.tensor(embedding))
+        self.decoder.embedding.weight.data.copy_(torch.tensor(embedding))
 
     def forward(self, src: torch.Tensor, trg: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """
