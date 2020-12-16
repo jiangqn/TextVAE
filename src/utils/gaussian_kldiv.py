@@ -19,4 +19,5 @@ class GaussianKLDiv(nn.Module):
             kld = kld.mean()
         elif self.reduction == "sum":
             kld = kld.sum()
+        # else self.reduction == "none"
         return kld

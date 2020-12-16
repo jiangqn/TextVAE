@@ -15,6 +15,7 @@ from src.train.eval_reverse_ppl import eval_reverse_ppl
 from src.utils.gaussian_kldiv import GaussianKLDiv
 from src.utils.kl_anneal import KLAnnealer
 from copy import deepcopy
+from src.module.criterion.language_cross_entropy import LanguageCrossEntropyLoss
 
 def train_text_vae(config: dict) -> None:
 
@@ -74,8 +75,9 @@ def train_text_vae(config: dict) -> None:
     model = model.to(device)
 
     logger.info("set up criterion and optimizer")
-    criterion = nn.CrossEntropyLoss(ignore_index=PAD_INDEX)
-    kldiv = GaussianKLDiv(reduction="mean")
+    # criterion = nn.CrossEntropyLoss(ignore_index=PAD_INDEX)
+    criterion = LanguageCrossEntropyLoss(ignore_index=PAD_INDEX, batch_reduction="none")
+    kldiv = GaussianKLDiv(reduction="none")
     optimizer = optim.Adam(model.parameters(), lr=train_config["lr"], weight_decay=train_config["weight_decay"])
 
     logger.info("start train")
@@ -126,6 +128,8 @@ def train_text_vae(config: dict) -> None:
             kl_loss = kldiv(posterior_mean, posterior_std)
             nll = ce_loss + kl_loss
             loss = ce_loss + kl_loss * kl_annealer.linear_anneal(global_step)
+
+            reduced_loss = loss.mean()
             loss.backward()
             nn.utils.clip_grad_norm_(model.parameters(), train_config["clip_grad_norm"])
             optimizer.step()

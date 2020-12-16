@@ -37,8 +37,9 @@ def eval_text_cnn(model, data_iter, criterion=None):
 
 def eval_language_model(model, data_iter, criterion):
 
-    total_tokens = 0
+    total_samples = 0
     total_loss = 0
+    total_ppl = 0
 
     model.eval()
     with torch.no_grad():
@@ -52,18 +53,23 @@ def eval_language_model(model, data_iter, criterion):
             output_sentence = torch.cat((sentence[:, 1:], pad), dim=-1)
 
             logit = model(input_sentence)
-            output_sentence = output_sentence.view(-1)
-            output_size = logit.size(-1)
-            logit = logit.view(-1, output_size)
             loss = criterion(logit, output_sentence)
 
             mask = (output_sentence != PAD_INDEX)
-            token_num = mask.long().sum().item()
-            total_tokens += token_num
-            total_loss += token_num * loss.item()
+            sentence_lens = mask.float().sum(dim=1)  # torch.FloatTensor (batch_size,)
 
-    loss = total_loss / total_tokens
-    return loss
+            token_loss = loss / sentence_lens
+            ppl = torch.exp(token_loss).mean().item()
+
+            reduced_loss = loss.mean()
+
+            total_samples += batch_size
+            total_loss += batch_size * reduced_loss.item()
+            total_ppl += batch_size * ppl
+
+    loss = total_loss / total_samples
+    ppl = total_ppl / total_samples
+    return loss, ppl
 
 def eval_text_vae(model, data_iter, base_path, **kwargs):
 

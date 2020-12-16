@@ -1,7 +1,7 @@
 seed: 42
 base_path: data/ptb
 glove_source_path: /home/jiangqn/datasets/embeddings/glove.840B.300d.txt
-max_len: 15
+max_len: 82
 text_cnn:
   model:
     embed_size: 300
@@ -18,15 +18,15 @@ text_cnn:
 language_model:
   model:
     embed_size: 300
-    hidden_size: 300
+    hidden_size: 512
     num_layers: 1
-    dropout: 0.3
+    dropout: 0.5
     weight_tying: True
   training:
     batch_size: 64
-    lr: 0.001
-    weight_decay: 0
-    epoches: 10
+    lr: 0.0003
+    weight_decay: 0.0003
+    epoches: 20
     eval_freq: 100
     clip_grad_norm: 5.0
     max_patience: 20
