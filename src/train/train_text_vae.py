@@ -68,7 +68,7 @@ def train_text_vae(config: dict) -> None:
 
     logger.info("build model")
     model = build_model(config)
-    # model.load_pretrained_embeddings(path=embedding_path)
+    model.load_pretrained_embeddings(path=embedding_path)
 
     logger.info("transfer model to GPU")
     model = model.to(device)
@@ -83,7 +83,7 @@ def train_text_vae(config: dict) -> None:
     kl_annealer = KLAnnealer(beta=train_config["beta"], anneal_step=train_config["anneal_step"])
 
     # min_total_ppl = 1e9
-    min_dev_loss = 1e9
+    corr_loss = 1e9
     corr_ce_loss = 1e9
     corr_kl_loss = 1e9
     corr_nll = 1e9
@@ -207,8 +207,8 @@ def train_text_vae(config: dict) -> None:
 
                 writer.add_scalar("sample_ppl", sample_ppl, global_step)
 
-                if global_step >= 1000 and dev_loss < min_dev_loss:
-                    min_dev_loss = dev_loss
+                if global_step >= 1000 and dev_nll < corr_nll:
+                    corr_loss = dev_loss
                     corr_ce_loss = dev_ce_loss
                     corr_kl_loss = dev_kl_loss
                     corr_nll = dev_ce_loss + dev_kl_loss
