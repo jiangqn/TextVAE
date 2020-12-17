@@ -12,6 +12,8 @@ from src.utils.convert_tensor_to_texts import convert_tensor_to_texts
 from src.constants import SOS, EOS, PAD_INDEX
 from src.train.eval import eval_language_model
 import math
+from src.module.criterion.language_cross_entropy import LanguageCrossEntropyLoss
+from src.utils.generate_pad import generate_pad
 
 def eval_reverse_ppl(config: dict, sample_path: str = None) -> float:
 	
@@ -92,17 +94,15 @@ def eval_reverse_ppl(config: dict, sample_path: str = None) -> float:
 
 	model = model.to(device)
 
-	criterion = nn.CrossEntropyLoss(ignore_index=PAD_INDEX)
+	criterion = LanguageCrossEntropyLoss(ignore_index=PAD_INDEX)
 	optimizer = optim.Adam(model.parameters(), lr=config["training"]["lr"], weight_decay=config["training"]["weight_decay"])
 
-	min_dev_loss = 1e9
+	corr_dev_nll = 1e9
+	corr_dev_ppl = 1e9
 	patience = 0
 	max_patience = 20
 
 	for epoch in range(config["training"]["epoches"]):
-
-		total_tokens = 0
-		total_loss = 0
 
 		for i, batch in enumerate(train_iter):
 
@@ -112,33 +112,23 @@ def eval_reverse_ppl(config: dict, sample_path: str = None) -> float:
 			sentence = batch.sentence
 			input_sentence = sentence
 			batch_size = sentence.size(0)
-			pad = torch.zeros(size=(batch_size, 1), dtype=torch.long, device=sentence.device)
+			pad = generate_pad(size=(batch_size, 1), device=sentence.device)
 			output_sentence = torch.cat((sentence[:, 1:], pad), dim=-1)
 
 			logit = model(input_sentence)
-			output_sentence = output_sentence.view(-1)
-			output_size = logit.size(-1)
-			logit = logit.view(-1, output_size)
-			loss = criterion(logit, output_sentence)
+			nll, seq_lens = criterion(logit, output_sentence)
+
+			loss = nll.mean()
 			loss.backward()
 			nn.utils.clip_grad_norm_(model.parameters(), config["training"]["clip_grad_norm"])
 			optimizer.step()
 
-			mask = (output_sentence != PAD_INDEX)
-			token_num = mask.long().sum().item()
-			total_tokens += token_num
-			total_loss += token_num * loss.item()
-
 			if i % config["training"]["eval_freq"] == 0:
-				train_loss = total_loss / total_tokens
-				total_loss = 0
-				total_tokens = 0
-				dev_loss = eval_language_model(model, dev_iter, criterion)
-				# logger.info("[epoch %2d step %4d]\ttrain_loss: %.4f train_ppl: %.4f dev_loss: %.4f dev_ppl: %.4f" %
-				# 			(epoch, i, train_loss, 2 ** train_loss, dev_loss, 2 ** dev_loss))
+				dev_nll, dev_ppl = eval_language_model(model, dev_iter, criterion)
 
-				if dev_loss < min_dev_loss:
-					min_dev_loss = dev_loss
+				if dev_ppl < corr_dev_ppl:
+					corr_dev_nll = dev_nll
+					corr_dev_ppl = dev_ppl
 					torch.save(model, save_path)
 					patience = 0
 				else:
@@ -150,13 +140,8 @@ def eval_reverse_ppl(config: dict, sample_path: str = None) -> float:
 		if patience == max_patience:
 			break
 
-	# logger.info("dev_loss: %.4f\tdev_ppl: %.4f" % (min_dev_loss, 2 ** min_dev_loss))
-
 	model = torch.load(save_path)
-	test_loss = eval_language_model(model, test_iter, criterion)
-	# logger.info("test_loss: %.4f\ttest_ppl: %.4f" % (test_loss, 2 ** test_loss))
+	test_loss, test_ppl = eval_language_model(model, test_iter, criterion)
 
 	os.remove(save_path)
-
-	test_ppl = math.exp(test_loss)
 	return test_ppl

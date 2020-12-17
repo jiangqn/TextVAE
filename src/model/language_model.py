@@ -9,7 +9,7 @@ class LanguageModel(nn.Module):
         super(LanguageModel, self).__init__()
         self.dropout = dropout
         self.embedding = nn.Embedding(num_embeddings=vocab_size, embedding_dim=embed_size)
-        self.rnn = nn.LSTM(
+        self.rnn = nn.GRU(
             input_size=embed_size,
             hidden_size=hidden_size,
             num_layers=num_layers,

@@ -104,7 +104,6 @@ def train_text_vae(config: dict) -> None:
         total_reconstruction = 0
         total_kl = 0
         total_nll = 0
-        total_ppl = 0
         total_loss = 0
         correct_tokens = 0
 
@@ -125,7 +124,6 @@ def train_text_vae(config: dict) -> None:
             reconstruction, seq_lens = criterion(logit, trg_output)
             kl = kldiv(posterior_mean, posterior_std)
             nll = reconstruction + kl
-            ppl = torch.exp(nll / seq_lens)
             loss = reconstruction + kl * kl_annealer.linear_anneal(global_step)
 
             loss = loss.mean()
@@ -140,7 +138,6 @@ def train_text_vae(config: dict) -> None:
             total_reconstruction += reconstruction.sum().item()
             total_kl += kl.sum().item()
             total_nll += nll.sum().item()
-            total_ppl += ppl.sum().item()
             total_loss += batch_size * loss.item()
 
             mask = (trg_output != PAD_INDEX)
@@ -152,7 +149,7 @@ def train_text_vae(config: dict) -> None:
                 train_reconstruction = total_reconstruction / total_samples
                 train_kl = total_kl / total_samples
                 train_nll = total_nll / total_samples
-                train_ppl = total_ppl / total_samples
+                train_ppl = math.exp(total_nll / total_tokens)
                 train_loss = total_loss / total_samples
                 train_wer = 1 - correct_tokens / total_tokens
 
@@ -162,7 +159,6 @@ def train_text_vae(config: dict) -> None:
                 total_reconstruction = 0
                 total_kl = 0
                 total_nll = 0
-                total_ppl = 0
                 total_loss = 0
                 correct_tokens = 0
 
@@ -243,6 +239,7 @@ def train_text_vae(config: dict) -> None:
                     torch.save(model, save_path)
 
     reverse_ppl = eval_reverse_ppl(config_copy)
+
     logger.info("[best checkpoint] at [epoch %2d step %4d] dev_reconstruction: %.4f dev_kl: %.4f dev_nll: %.4f dev_ppl: %.4f dev_loss: %.4f dev_wer: %.4f forward_ppl: %.4f reverse_ppl: %.4f"
                 % (corr_epoch, corr_step, corr_reconstruction, corr_kl, corr_nll, corr_ppl, corr_loss, corr_wer, corr_forward_ppl, reverse_ppl))
     logger.info("finish")

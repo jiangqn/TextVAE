@@ -2,9 +2,8 @@ import torch
 from torch import nn
 from src.constants import PAD_INDEX
 from src.train.sample_eval import sample_eval_by_language_model
-from src.utils.gaussian_kldiv import GaussianKLDiv
-from src.module.criterion.language_cross_entropy import LanguageCrossEntropyLoss
 from src.utils.generate_pad import generate_pad
+import math
 
 def eval_text_cnn(model, data_iter, criterion=None):
 
@@ -40,8 +39,8 @@ def eval_text_cnn(model, data_iter, criterion=None):
 def eval_language_model(model, data_iter, criterion):
 
     total_samples = 0
+    total_tokens = 0
     total_nll = 0
-    total_ppl = 0
 
     model.eval()
     with torch.no_grad():
@@ -56,14 +55,14 @@ def eval_language_model(model, data_iter, criterion):
 
             logit = model(input_sentence)
             nll, seq_lens = criterion(logit, output_sentence)
-            ppl = torch.exp(nll / seq_lens)
 
             total_samples += batch_size
+            total_tokens += seq_lens.long().sum().item()
             total_nll += nll.sum().item()
-            total_ppl += ppl.sum().item()
 
     nll = total_nll / total_samples
-    ppl = total_ppl / total_samples
+    ppl = math.exp(total_nll / total_tokens)
+
     return nll, ppl
 
 def eval_text_vae(model, data_iter, criterion, kldiv, base_path, **kwargs):
@@ -74,7 +73,6 @@ def eval_text_vae(model, data_iter, criterion, kldiv, base_path, **kwargs):
     total_reconstruction = 0
     total_kl = 0
     total_nll = 0
-    total_ppl = 0
     correct_tokens = 0
 
     model.eval()
@@ -103,7 +101,6 @@ def eval_text_vae(model, data_iter, criterion, kldiv, base_path, **kwargs):
             total_reconstruction += reconstruction.sum().item()
             total_kl += kl.sum().item()
             total_nll += nll.sum().item()
-            total_ppl += ppl.sum().item()
 
             mask = (trg_output != PAD_INDEX)
             prediction = logit.argmax(dim=-1)
@@ -112,7 +109,7 @@ def eval_text_vae(model, data_iter, criterion, kldiv, base_path, **kwargs):
     reconstruction = total_reconstruction / total_samples
     kl = total_kl / total_samples
     nll = total_nll / total_samples
-    ppl = total_ppl / total_samples
+    ppl = math.exp(total_nll / total_tokens)
     wer = 1 - correct_tokens / total_tokens
     forward_ppl = sample_eval_by_language_model(model, base_path, **kwargs)
 

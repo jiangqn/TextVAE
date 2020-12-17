@@ -76,8 +76,8 @@ def train_language_model(config: dict) -> None:
     for epoch in range(train_config["epoches"]):
 
         total_samples = 0
+        total_tokens = 0
         total_nll = 0
-        total_ppl = 0
 
         for i, batch in enumerate(train_iter):
 
@@ -92,7 +92,6 @@ def train_language_model(config: dict) -> None:
 
             logit = model(input_sentence)   # torch.FloatTensor (batch_size, seq_len, vocab_size)
             nll, seq_lens = criterion(logit, output_sentence)    # torch.FloatTensor (batch_size,), torch.FloatTensor (batch_size,)
-            ppl = torch.exp(nll / seq_lens)
 
             loss = nll.mean()
             loss.backward()
@@ -100,20 +99,20 @@ def train_language_model(config: dict) -> None:
             optimizer.step()
 
             total_samples += batch_size
+            total_tokens += seq_lens.long().sum().item()
             total_nll += nll.sum().item()
-            total_ppl += ppl.sum().item()
 
             if i % train_config["eval_freq"] == 0:
                 train_nll = total_nll / total_samples
-                train_ppl = total_ppl / total_samples
+                train_ppl = math.exp(total_nll / total_tokens)
                 total_samples = 0
+                total_tokens = 0
                 total_nll = 0
-                total_ppl = 0
                 dev_nll, dev_ppl = eval_language_model(model, dev_iter, criterion)
                 logger.info("[epoch %2d step %4d]\ttrain_nll: %.4f train_ppl: %.4f dev_nll: %.4f dev_ppl: %.4f" %
                             (epoch, i, train_nll, train_ppl, dev_nll, dev_ppl))
 
-                if dev_nll < corr_dev_nll:
+                if dev_ppl < corr_dev_ppl:
                     corr_dev_nll = dev_nll
                     corr_dev_ppl = dev_ppl
                     torch.save(model, save_path)
