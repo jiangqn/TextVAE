@@ -26,7 +26,7 @@ language_model:
     batch_size: 64
     lr: 0.001
     weight_decay: 0.0001
-    epoches: 25
+    epoches: 20
     eval_freq: 100
     clip_grad_norm: 5.0
     max_patience: 20
@@ -74,10 +74,10 @@ text_vae:
   encoder_decoder_tying: True
   training:
     batch_size: 64
-    beta: 0.05
+    beta: 1
     lr: 0.001
     weight_decay: 0
-    epoches: 1
+    epoches: 10
     eval_freq: 100
     clip_grad_norm: 5.0
     anneal_step: 3000

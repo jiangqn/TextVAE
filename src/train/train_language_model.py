@@ -10,6 +10,7 @@ from src.constants import PAD_INDEX, SOS, EOS
 from src.train.eval import eval_language_model
 import math
 from src.module.criterion.language_cross_entropy import LanguageCrossEntropyLoss
+from src.utils.generate_pad import generate_pad
 
 def train_language_model(config: dict) -> None:
 
@@ -64,19 +65,18 @@ def train_language_model(config: dict) -> None:
     model = model.to(device)
 
     logger.info("set up criterion and optimizer")
-    # criterion = nn.CrossEntropyLoss(ignore_index=PAD_INDEX)
-    criterion = LanguageCrossEntropyLoss(ignore_index=PAD_INDEX, batch_reduction="none", seq_reduction="sum")
+    criterion = LanguageCrossEntropyLoss(ignore_index=PAD_INDEX)
     optimizer = optim.Adam(model.parameters(), lr=train_config["lr"], weight_decay=train_config["weight_decay"])
 
     logger.info("start train")
 
-    corr_dev_loss = 1e9
+    corr_dev_nll = 1e9
     corr_dev_ppl = 1e9
 
     for epoch in range(train_config["epoches"]):
 
         total_samples = 0
-        total_loss = 0
+        total_nll = 0
         total_ppl = 0
 
         for i, batch in enumerate(train_iter):
@@ -87,41 +87,36 @@ def train_language_model(config: dict) -> None:
             sentence = batch.sentence
             input_sentence = sentence
             batch_size = sentence.size(0)
-            pad = torch.zeros(size=(batch_size, 1), dtype=torch.long, device=sentence.device)
+            pad = generate_pad(size=(batch_size, 1), device=sentence.device)
             output_sentence = torch.cat((sentence[:, 1:], pad), dim=-1)
 
-            logit = model(input_sentence)
-            loss = criterion(logit, output_sentence)    # torch.FloatTensor (batch_size,)
+            logit = model(input_sentence)   # torch.FloatTensor (batch_size, seq_len, vocab_size)
+            nll, seq_lens = criterion(logit, output_sentence)    # torch.FloatTensor (batch_size,), torch.FloatTensor (batch_size,)
+            ppl = torch.exp(nll / seq_lens)
 
-            mask = (output_sentence != PAD_INDEX)
-            sentence_lens = mask.float().sum(dim=1)  # torch.FloatTensor (batch_size,)
-
-            token_loss = loss / sentence_lens
-            ppl = torch.exp(token_loss).mean().item()
-
-            reduced_loss = loss.mean()
-            reduced_loss.backward()
+            loss = nll.mean()
+            loss.backward()
             nn.utils.clip_grad_norm_(model.parameters(), train_config["clip_grad_norm"])
             optimizer.step()
 
             total_samples += batch_size
-            total_loss += batch_size * reduced_loss.item()
-            total_ppl += batch_size * ppl
+            total_nll += nll.sum().item()
+            total_ppl += ppl.sum().item()
 
             if i % train_config["eval_freq"] == 0:
-                train_loss = total_loss / total_samples
+                train_nll = total_nll / total_samples
                 train_ppl = total_ppl / total_samples
-                total_loss = 0
-                total_ppl = 0
                 total_samples = 0
-                dev_loss, dev_ppl = eval_language_model(model, dev_iter, criterion)
+                total_nll = 0
+                total_ppl = 0
+                dev_nll, dev_ppl = eval_language_model(model, dev_iter, criterion)
                 logger.info("[epoch %2d step %4d]\ttrain_nll: %.4f train_ppl: %.4f dev_nll: %.4f dev_ppl: %.4f" %
-                            (epoch, i, train_loss, train_ppl, dev_loss, dev_ppl))
+                            (epoch, i, train_nll, train_ppl, dev_nll, dev_ppl))
 
-                if dev_loss < corr_dev_loss:
-                    corr_dev_loss = dev_loss
+                if dev_nll < corr_dev_nll:
+                    corr_dev_nll = dev_nll
                     corr_dev_ppl = dev_ppl
                     torch.save(model, save_path)
 
-    logger.info("dev_loss: %.4f\tdev_ppl: %.4f" % (corr_dev_loss, corr_dev_ppl))
+    logger.info("dev_nll: %.4f\tdev_ppl: %.4f" % (corr_dev_nll, corr_dev_ppl))
     logger.info("finish")

@@ -3,6 +3,8 @@ from torch import nn
 from src.constants import PAD_INDEX
 from src.train.sample_eval import sample_eval_by_language_model
 from src.utils.gaussian_kldiv import GaussianKLDiv
+from src.module.criterion.language_cross_entropy import LanguageCrossEntropyLoss
+from src.utils.generate_pad import generate_pad
 
 def eval_text_cnn(model, data_iter, criterion=None):
 
@@ -38,7 +40,7 @@ def eval_text_cnn(model, data_iter, criterion=None):
 def eval_language_model(model, data_iter, criterion):
 
     total_samples = 0
-    total_loss = 0
+    total_nll = 0
     total_ppl = 0
 
     model.eval()
@@ -49,39 +51,31 @@ def eval_language_model(model, data_iter, criterion):
             sentence = batch.sentence
             input_sentence = sentence
             batch_size = sentence.size(0)
-            pad = torch.zeros(size=(batch_size, 1), dtype=torch.long, device=sentence.device)
+            pad = generate_pad(size=(batch_size, 1), device=sentence.device)
             output_sentence = torch.cat((sentence[:, 1:], pad), dim=-1)
 
             logit = model(input_sentence)
-            loss = criterion(logit, output_sentence)
-
-            mask = (output_sentence != PAD_INDEX)
-            sentence_lens = mask.float().sum(dim=1)  # torch.FloatTensor (batch_size,)
-
-            token_loss = loss / sentence_lens
-            ppl = torch.exp(token_loss).mean().item()
-
-            reduced_loss = loss.mean()
+            nll, seq_lens = criterion(logit, output_sentence)
+            ppl = torch.exp(nll / seq_lens)
 
             total_samples += batch_size
-            total_loss += batch_size * reduced_loss.item()
-            total_ppl += batch_size * ppl
+            total_nll += nll.sum().item()
+            total_ppl += ppl.sum().item()
 
-    loss = total_loss / total_samples
+    nll = total_nll / total_samples
     ppl = total_ppl / total_samples
-    return loss, ppl
+    return nll, ppl
 
-def eval_text_vae(model, data_iter, base_path, **kwargs):
+def eval_text_vae(model, data_iter, criterion, kldiv, base_path, **kwargs):
 
-    criterion = nn.CrossEntropyLoss(ignore_index=PAD_INDEX)
-    kldiv = GaussianKLDiv()
-
-    total_tokens = 0
     total_samples = 0
+    total_tokens = 0
 
+    total_reconstruction = 0
+    total_kl = 0
+    total_nll = 0
+    total_ppl = 0
     correct_tokens = 0
-    total_ce_loss = 0
-    total_kl_loss = 0
 
     model.eval()
 
@@ -93,29 +87,33 @@ def eval_text_vae(model, data_iter, base_path, **kwargs):
             src = sentence[:, 1:]
             trg_input = sentence
             batch_size = sentence.size(0)
-            pad = torch.zeros(size=(batch_size, 1), dtype=torch.long, device=sentence.device)
+            pad = generate_pad(size=(batch_size, 1), device=sentence.device)
             trg_output = torch.cat((sentence[:, 1:], pad), dim=-1)
 
-            logit, mean, std = model(src, trg_input)
-            trg_output = trg_output.view(-1)
-            output_size = logit.size(-1)
-            logit = logit.view(-1, output_size)
-            ce_loss = criterion(logit, trg_output)
-            kl_loss = kldiv(mean, std)
+            logit, posterior_mean, posterior_std = model(src, trg_input)
+
+            reconstruction, seq_lens = criterion(logit, trg_output)
+            kl = kldiv(posterior_mean, posterior_std)
+            nll = reconstruction + kl
+            ppl = torch.exp(nll / seq_lens)
+
+            total_samples += batch_size
+            total_tokens += seq_lens.long().sum().item()
+
+            total_reconstruction += reconstruction.sum().item()
+            total_kl += kl.sum().item()
+            total_nll += nll.sum().item()
+            total_ppl += ppl.sum().item()
 
             mask = (trg_output != PAD_INDEX)
-            token_num = mask.long().sum().item()
-            total_tokens += token_num
-            total_samples += batch_size
-
-            total_ce_loss += token_num * ce_loss.item()
-            total_kl_loss += batch_size * kl_loss.item()
             prediction = logit.argmax(dim=-1)
             correct_tokens += (prediction.masked_select(mask) == trg_output.masked_select(mask)).long().sum().item()
 
-    ce_loss = total_ce_loss / total_tokens
-    kl_loss = total_kl_loss / total_samples
+    reconstruction = total_reconstruction / total_samples
+    kl = total_kl / total_samples
+    nll = total_nll / total_samples
+    ppl = total_ppl / total_samples
     wer = 1 - correct_tokens / total_tokens
-    sample_ppl = sample_eval_by_language_model(model, base_path, **kwargs)
+    forward_ppl = sample_eval_by_language_model(model, base_path, **kwargs)
 
-    return ce_loss, kl_loss, wer, sample_ppl
+    return reconstruction, kl, nll, ppl, wer, forward_ppl

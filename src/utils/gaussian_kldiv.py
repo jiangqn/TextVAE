@@ -5,7 +5,7 @@ class GaussianKLDiv(nn.Module):
 
     def __init__(self, reduction: str = "mean") -> None:
         super(GaussianKLDiv, self).__init__()
-        assert reduction in [None, "mean", "sum"]
+        assert reduction in ["none", "mean", "sum"]
         self.reduction = reduction
 
     def forward(self, mean: torch.Tensor, std: torch.Tensor) -> torch.Tensor:

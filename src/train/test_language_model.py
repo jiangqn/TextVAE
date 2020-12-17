@@ -32,7 +32,7 @@ def test_language_model(config: dict) -> None:
     test_iter = Iterator(test_data, batch_size=config["training"]["batch_size"], shuffle=False, device=device)
 
     model = torch.load(save_path)
-    criterion = LanguageCrossEntropyLoss(ignore_index=PAD_INDEX, batch_reduction="none", seq_reduction="sum")
+    criterion = LanguageCrossEntropyLoss(ignore_index=PAD_INDEX)
 
-    test_loss, test_ppl = eval_language_model(model, test_iter, criterion)
-    print("test_nll: %.4f\ttest_ppl: %.4f" % (test_loss, test_ppl))
+    test_nll, test_ppl = eval_language_model(model, test_iter, criterion)
+    print("test_nll: %.4f\ttest_ppl: %.4f" % (test_nll, test_ppl))

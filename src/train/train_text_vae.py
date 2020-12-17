@@ -16,6 +16,7 @@ from src.utils.gaussian_kldiv import GaussianKLDiv
 from src.utils.kl_anneal import KLAnnealer
 from copy import deepcopy
 from src.module.criterion.language_cross_entropy import LanguageCrossEntropyLoss
+from src.utils.generate_pad import generate_pad
 
 def train_text_vae(config: dict) -> None:
 
@@ -75,8 +76,7 @@ def train_text_vae(config: dict) -> None:
     model = model.to(device)
 
     logger.info("set up criterion and optimizer")
-    # criterion = nn.CrossEntropyLoss(ignore_index=PAD_INDEX)
-    criterion = LanguageCrossEntropyLoss(ignore_index=PAD_INDEX, batch_reduction="none")
+    criterion = LanguageCrossEntropyLoss(ignore_index=PAD_INDEX)
     kldiv = GaussianKLDiv(reduction="none")
     optimizer = optim.Adam(model.parameters(), lr=train_config["lr"], weight_decay=train_config["weight_decay"])
 
@@ -84,13 +84,13 @@ def train_text_vae(config: dict) -> None:
 
     kl_annealer = KLAnnealer(beta=train_config["beta"], anneal_step=train_config["anneal_step"])
 
-    # min_total_ppl = 1e9
-    corr_loss = 1e9
-    corr_ce_loss = 1e9
-    corr_kl_loss = 1e9
+    corr_reconstruction = 1e9
+    corr_kl = 1e9
     corr_nll = 1e9
+    corr_ppl = 1e9
+    corr_loss = 1e9
     corr_wer = 1
-    corr_sample_ppl = 1e9
+    corr_forward_ppl = 1e9
     corr_epoch = 0
     corr_step = 0
 
@@ -98,14 +98,15 @@ def train_text_vae(config: dict) -> None:
 
     for epoch in range(train_config["epoches"]):
 
-        total_tokens = 0
         total_samples = 0
+        total_tokens = 0
 
-        correct_tokens = 0
-        total_ce_loss = 0
-        total_kl_loss = 0
+        total_reconstruction = 0
+        total_kl = 0
         total_nll = 0
+        total_ppl = 0
         total_loss = 0
+        correct_tokens = 0
 
         for i, batch in enumerate(train_iter):
 
@@ -116,88 +117,105 @@ def train_text_vae(config: dict) -> None:
             src = sentence[:, 1:]
             trg_input = sentence
             batch_size = sentence.size(0)
-            pad = torch.zeros(size=(batch_size, 1), dtype=torch.long, device=sentence.device)
+            pad = generate_pad(size=(batch_size, 1), device=sentence.device)
             trg_output = torch.cat((sentence[:, 1:], pad), dim=-1)
 
             logit, posterior_mean, posterior_std = model(src, trg_input)
-            trg_output = trg_output.view(-1)
-            output_size = logit.size(-1)
-            logit = logit.view(-1, output_size)
 
-            ce_loss = criterion(logit, trg_output)
-            kl_loss = kldiv(posterior_mean, posterior_std)
-            nll = ce_loss + kl_loss
-            loss = ce_loss + kl_loss * kl_annealer.linear_anneal(global_step)
+            reconstruction, seq_lens = criterion(logit, trg_output)
+            kl = kldiv(posterior_mean, posterior_std)
+            nll = reconstruction + kl
+            ppl = torch.exp(nll / seq_lens)
+            loss = reconstruction + kl * kl_annealer.linear_anneal(global_step)
 
-            reduced_loss = loss.mean()
+            loss = loss.mean()
             loss.backward()
             nn.utils.clip_grad_norm_(model.parameters(), train_config["clip_grad_norm"])
             optimizer.step()
             global_step += 1
 
-            mask = (trg_output != PAD_INDEX)
-            token_num = mask.long().sum().item()
-            total_tokens += token_num
             total_samples += batch_size
+            total_tokens += seq_lens.long().sum().item()
 
-            total_ce_loss += token_num * ce_loss.item()
-            total_kl_loss += batch_size * kl_loss.item()
-            total_nll += batch_size * nll
+            total_reconstruction += reconstruction.sum().item()
+            total_kl += kl.sum().item()
+            total_nll += nll.sum().item()
+            total_ppl += ppl.sum().item()
+            total_loss += batch_size * loss.item()
 
+            mask = (trg_output != PAD_INDEX)
             prediction = logit.argmax(dim=-1)
             correct_tokens += (prediction.masked_select(mask) == trg_output.masked_select(mask)).long().sum().item()
 
             if i % train_config["eval_freq"] == 0:
 
-                train_wer = 1 - correct_tokens / total_tokens
-                train_ce_loss = total_ce_loss / total_tokens
-                train_kl_loss = total_kl_loss / total_samples
+                train_reconstruction = total_reconstruction / total_samples
+                train_kl = total_kl / total_samples
                 train_nll = total_nll / total_samples
+                train_ppl = total_ppl / total_samples
+                train_loss = total_loss / total_samples
+                train_wer = 1 - correct_tokens / total_tokens
 
-
-                correct_tokens = 0
-                total_ce_loss = 0
-                total_kl_loss = 0
-                total_nll = 0
                 total_tokens = 0
                 total_samples = 0
 
-                dev_ce_loss, dev_kl_loss, dev_wer, sample_ppl = eval_text_vae(model, dev_iter, base_path, language_model=language_model, max_len=max_len)
-                dev_loss = dev_ce_loss + dev_kl_loss * kl_annealer.linear_anneal(global_step)
-                dev_nll = dev_ce_loss + dev_kl_loss
-                logger.info(
-                    "[epoch %2d step %4d]\ttrain_ce_loss: %.4f train_kl_loss: %.4f train_nll: %.4f train_ppl: %.4f train_wer: %.4f"
-                    % (epoch, i, train_ce_loss, train_kl_loss, train_nll, 0, train_wer))
-                logger.info("[epoch %2d step %4d]\tdev_ce_loss: %.4f dev_kl_loss: %.4f dev_nll: %.4f dev_ppl: %.4f dev_wer: %.4f sample_ppl: %.4f"
-                            % (epoch, i, dev_ce_loss, dev_kl_loss, dev_nll, 0, dev_wer, sample_ppl))
+                total_reconstruction = 0
+                total_kl = 0
+                total_nll = 0
+                total_ppl = 0
+                total_loss = 0
+                correct_tokens = 0
+
+                dev_reconstruction, dev_kl, dev_nll, dev_ppl, dev_wer, forward_ppl = eval_text_vae(model, dev_iter, criterion, kldiv, base_path, language_model=language_model, max_len=max_len)
+                dev_loss = dev_reconstruction + dev_kl * kl_annealer.linear_anneal(global_step)
+                logger.info("[epoch %2d step %4d]\ttrain_reconstruction: %.4f train_kl: %.4f train_nll: %.4f train_ppl: %.4f train_loss: %.4f train_wer: %.4f"
+                    % (epoch, i, train_reconstruction, train_kl, train_nll, train_ppl, train_loss, train_wer))
+                logger.info("[epoch %2d step %4d]\tdev_reconstruction: %.4f dev_kl: %.4f dev_nll: %.4f dev_ppl: %.4f dev_loss: %.4f dev_wer: %.4f forward_ppl: %.4f"
+                            % (epoch, i, dev_reconstruction, dev_kl, dev_nll, dev_ppl, dev_loss, dev_wer, forward_ppl))
 
                 writer.add_scalar("kl_weight", kl_annealer.linear_anneal(global_step), global_step)
 
                 writer.add_scalars(
-                    "ce_loss",
+                    "reconstruction",
                     {
-                        "train_ce_loss": train_ce_loss,
-                        "dev_ce_loss": dev_ce_loss
+                        "train_reconstruction": train_reconstruction,
+                        "dev_reconstruction": dev_reconstruction
                     },
                     global_step
                 )
 
                 writer.add_scalars(
-                    "kl_loss",
+                    "kl",
                     {
-                        "train_kl_loss": train_kl_loss,
-                        "dev_kl_loss": dev_kl_loss
+                        "train_kl": train_kl,
+                        "dev_kl": dev_kl
                     },
                     global_step
+                )
+
+                writer.add_scalars(
+                    "nll",
+                    {
+                        "train_nll": train_nll,
+                        "dev_nll": dev_nll
+                    }
                 )
 
                 writer.add_scalars(
                     "ppl",
                     {
-                        "train_ppl": 0,
-                        "dev_ppl": 0
+                        "train_ppl": train_ppl,
+                        "dev_ppl": dev_ppl
                     },
                     global_step
+                )
+
+                writer.add_scalars(
+                    "loss",
+                    {
+                        "train_loss": train_loss,
+                        "dev_loss": dev_loss
+                    }
                 )
 
                 writer.add_scalars(
@@ -209,20 +227,22 @@ def train_text_vae(config: dict) -> None:
                     global_step
                 )
 
-                writer.add_scalar("sample_ppl", sample_ppl, global_step)
+                writer.add_scalar("forward_ppl", forward_ppl, global_step)
 
-                if global_step >= 1000 and dev_nll < corr_nll:
+                if dev_nll < corr_nll:
+
+                    corr_reconstruction = dev_reconstruction
+                    corr_kl = dev_kl
+                    corr_nll = dev_nll
+                    corr_ppl = dev_ppl
                     corr_loss = dev_loss
-                    corr_ce_loss = dev_ce_loss
-                    corr_kl_loss = dev_kl_loss
-                    corr_nll = dev_ce_loss + dev_kl_loss
                     corr_wer = dev_wer
-                    corr_sample_ppl = sample_ppl
+                    corr_forward_ppl = forward_ppl
                     corr_epoch = epoch
                     corr_step = i
                     torch.save(model, save_path)
 
     reverse_ppl = eval_reverse_ppl(config_copy)
-    logger.info("[best checkpoint] at [epoch %2d step %4d] dev_ce_loss: %.4f dev_kl_loss: %.4f dev_ppl: %.4f dev_wer: %.4f forward_ppl: %.4f reverse_ppl: %.4f"
-                % (corr_epoch, corr_step, corr_ce_loss, corr_kl_loss, math.exp(corr_nll), corr_wer, corr_sample_ppl, reverse_ppl))
+    logger.info("[best checkpoint] at [epoch %2d step %4d] dev_reconstruction: %.4f dev_kl: %.4f dev_nll: %.4f dev_ppl: %.4f dev_loss: %.4f dev_wer: %.4f forward_ppl: %.4f reverse_ppl: %.4f"
+                % (corr_epoch, corr_step, corr_reconstruction, corr_kl, corr_nll, corr_ppl, corr_loss, corr_wer, corr_forward_ppl, reverse_ppl))
     logger.info("finish")
