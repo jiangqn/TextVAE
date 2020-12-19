@@ -3,10 +3,10 @@ from torch import nn
 import torch.nn.functional as F
 from typing import Tuple
 
-class MultiLayerLSTMCell(nn.Module):
+class SkipMultiLayerLSTMCell(nn.Module):
 
     def __init__(self, input_size: int, hidden_size: int, latent_size: int, num_layers: int = 1, dropout: float = 0, bias: bool = True) -> None:
-        super(MultiLayerLSTMCell, self).__init__()
+        super(SkipMultiLayerLSTMCell, self).__init__()
         self.input_size = input_size
         self.hidden_size = hidden_size
         self.latent_size = latent_size

@@ -82,7 +82,8 @@ def train_text_vae(config: dict) -> None:
 
     logger.info("start train")
 
-    kl_annealer = KLAnnealer(beta=train_config["beta"], anneal_step=train_config["anneal_step"])
+    anneal_config = train_config["anneal"]
+    kl_annealer = KLAnnealer(beta=train_config["beta"], anneal_type=anneal_config["type"], anneal_step=anneal_config["step"], offset=anneal_config["offset"])
 
     corr_reconstruction = 1e9
     corr_kl = 1e9
@@ -124,7 +125,7 @@ def train_text_vae(config: dict) -> None:
             reconstruction, seq_lens = criterion(logit, trg_output)
             kl = kldiv(posterior_mean, posterior_std)
             nll = reconstruction + kl
-            loss = reconstruction + kl * kl_annealer.linear_anneal(global_step)
+            loss = reconstruction + kl * kl_annealer.anneal(global_step)
 
             loss = loss.mean()
             loss.backward()
@@ -163,13 +164,13 @@ def train_text_vae(config: dict) -> None:
                 correct_tokens = 0
 
                 dev_reconstruction, dev_kl, dev_nll, dev_ppl, dev_wer, forward_ppl = eval_text_vae(model, dev_iter, criterion, kldiv, base_path, language_model=language_model, max_len=max_len)
-                dev_loss = dev_reconstruction + dev_kl * kl_annealer.linear_anneal(global_step)
+                dev_loss = dev_reconstruction + dev_kl * kl_annealer.anneal(global_step)
                 logger.info("[epoch %2d step %4d]\ttrain_reconstruction: %.4f train_kl: %.4f train_nll: %.4f train_ppl: %.4f train_loss: %.4f train_wer: %.4f"
                     % (epoch, i, train_reconstruction, train_kl, train_nll, train_ppl, train_loss, train_wer))
                 logger.info("[epoch %2d step %4d]\tdev_reconstruction: %.4f dev_kl: %.4f dev_nll: %.4f dev_ppl: %.4f dev_loss: %.4f dev_wer: %.4f forward_ppl: %.4f"
                             % (epoch, i, dev_reconstruction, dev_kl, dev_nll, dev_ppl, dev_loss, dev_wer, forward_ppl))
 
-                writer.add_scalar("kl_weight", kl_annealer.linear_anneal(global_step), global_step)
+                writer.add_scalar("kl_weight", kl_annealer.anneal(global_step), global_step)
 
                 writer.add_scalars(
                     "reconstruction",

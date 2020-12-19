@@ -3,46 +3,88 @@ base_path: data/amazon
 glove_source_path: /home/jiangqn/datasets/embeddings/glove.840B.300d.txt
 max_len: 15
 text_cnn:
-  embed_size: 300
-  kernel_sizes: [3, 4, 5]
-  kernel_num: 100
-  dropout: 0.5
-  num_categories: 4
-  batch_size: 64
-  lr: 0.001
-  weight_decay: 0
-  epoches: 2
-  eval_freq: 100
-  max_patience: 20
+  model:
+    embed_size: 300
+    kernel_sizes: [3, 4, 5]
+    kernel_num: 100
+    dropout: 0.5
+  training:
+    batch_size: 64
+    lr: 0.001
+    weight_decay: 0
+    epoches: 5
+    eval_freq: 100
+    max_patience: 20
 language_model:
-  embed_size: 300
-  hidden_size: 300
-  num_layers: 1
-  dropout: 0.3
-  weight_tying: False
-  batch_size: 64
-  lr: 0.001
-  weight_decay: 0
-  epoches: 5
-  eval_freq: 100
-  clip_grad_norm: 5.0
-  max_patience: 20
-vae:
-  embed_size: 300
-  hidden_size: 300
-  num_layers: 2
-  dropout: 0.5
-  word_dropout: 0.5
-  enc_dec_tying: True
-  dec_gen_tying: True
-  batch_size: 64
-  beta: 0.05
-  lr: 0.001
-  weight_decay: 0
-  epoches: 1
-  eval_freq: 100
-  clip_grad_norm: 5.0
-  anneal_step: 2500
+  model:
+    embed_size: 300
+    hidden_size: 300
+    num_layers: 1
+    dropout: 0.5
+    weight_tying: True
+  training:
+    batch_size: 64
+    lr: 0.001
+    weight_decay: 0
+    epoches: 5
+    eval_freq: 100
+    clip_grad_norm: 5.0
+    max_patience: 20
+text_vae:
+  encoder:
+    encoder_type: "gru_encoder"
+    bow_encoder:
+      embed_size: 300
+      dropout: 0.5
+    bow_mlp_encoder:
+      embed_size: 300
+      hidden_size: 300
+      dropout: 0.5
+    conv_encoder:
+      embed_size: 300
+      kernel_sizes: [3, 4, 5]
+      kernel_num: 100
+      num_layers: 1
+      dropout: 0.5
+    gru_encoder:
+      embed_size: 300
+      hidden_size: 300
+      num_layers: 1
+      bidirectional: True
+      dropout: 0.5
+      output_type: "attention_pooling"
+    lstm_encoder:
+      embed_size: 300
+      hidden_size: 300
+      num_layers: 1
+      bidirectional: True
+      dropout: 0.5
+      output_type: "attention_pooling"
+  decoder:
+    decoder_type: "gru_decoder"
+    gru_decoder:
+      embed_size: 300
+      hidden_size: 300
+      num_layers: 1
+      dropout: 0.5
+      word_dropout: 0.5
+      decoder_generator_tying: True
+      initial_hidden_type: "latent_projection"
+  latent_size: 64
+  encoder_decoder_tying: True
+  training:
+    batch_size: 64
+    beta: 1
+    anneal:
+      type: "linear"
+      step: 10000
+      offset: 5
+    lr: 0.001
+    weight_decay: 0.0001
+    epoches: 10
+    eval_freq: 100
+    clip_grad_norm: 5.0
+    anneal_step: 3000
 vanilla_sample:
   sample_num: 100000
   save_encoding: True

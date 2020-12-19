@@ -5,11 +5,11 @@ from src.module.rnn_cell.skip_multi_layer_gru_cell import SkipMultiLayerGRUCell
 from src.constants import SOS_INDEX, EOS_INDEX
 from src.module.decoder.decoder import Decoder
 
-class GRUDecoder(Decoder):
+class SkipGRUDecoder(Decoder):
 
     def __init__(self, vocab_size: int, embed_size: int, hidden_size: int, latent_size: int,
                  num_layers: int, dropout: float, word_dropout: float, decoder_generator_tying: bool, initial_hidden_type: str) -> None:
-        super(GRUDecoder, self).__init__()
+        super(SkipGRUDecoder, self).__init__()
         self.embedding = nn.Embedding(num_embeddings=vocab_size, embedding_dim=embed_size)
         assert initial_hidden_type in ["zero", "latent_projection"]
         self.initial_hidden_type = initial_hidden_type

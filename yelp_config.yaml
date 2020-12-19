@@ -20,13 +20,13 @@ language_model:
     embed_size: 300
     hidden_size: 300
     num_layers: 1
-    dropout: 0.3
-    weight_tying: False
+    dropout: 0.5
+    weight_tying: True
   training:
     batch_size: 64
     lr: 0.001
-    weight_decay: 0
-    epoches: 5
+    weight_decay: 0.0001
+    epoches: 20
     eval_freq: 100
     clip_grad_norm: 5.0
     max_patience: 20
@@ -59,7 +59,7 @@ text_vae:
       num_layers: 1
       bidirectional: True
       dropout: 0.5
-      output_type: "final_hidden"
+      output_type: "attention_pooling"
   decoder:
     decoder_type: "gru_decoder"
     gru_decoder:
@@ -74,10 +74,14 @@ text_vae:
   encoder_decoder_tying: True
   training:
     batch_size: 64
-    beta: 0.05
+    beta: 1
+    anneal:
+      type: "linear"
+      step: 10000
+      offset: 5
     lr: 0.001
     weight_decay: 0
-    epoches: 1
+    epoches: 20
     eval_freq: 100
     clip_grad_norm: 5.0
     anneal_step: 3000
