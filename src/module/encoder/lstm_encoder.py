@@ -15,7 +15,7 @@ class LSTMEncoder(Encoder):
         self.hidden_size = hidden_size
         self.num_layers = num_layers
         self.bidirectional = bidirectional
-        self.rnn = nn.GRU(
+        self.rnn = nn.LSTM(
             input_size=embed_size,
             hidden_size=hidden_size,
             num_layers=num_layers,

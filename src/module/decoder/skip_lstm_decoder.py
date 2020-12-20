@@ -106,7 +106,7 @@ class SkipLSTMDecoder(Decoder):
         :return token_logit: torch.FloatTensor (batch_size, logit)
         """
         token_embedding = self.embedding(token.unsqueeze(0)).squeeze(0) # torch.FloatTensor (batch_size, embed_size)
-        hidden, cell = self.rnn_cell(torch.cat((token_embedding, latent_variable), dim=1), (hidden, cell))
+        hidden, cell = self.rnn_cell(token_embedding, (hidden, cell), latent_variable)
         top_hidden = hidden[-1]
         output = self.output_projection(top_hidden)
         token_logit = self.generator(output)

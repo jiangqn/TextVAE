@@ -49,23 +49,23 @@ text_vae:
     gru_encoder:
       embed_size: 300
       hidden_size: 600
-      num_layers: 1
+      num_layers: 2
       bidirectional: True
       dropout: 0.5
       output_type: "attention_pooling"
     lstm_encoder:
       embed_size: 300
-      hidden_size: 300
-      num_layers: 1
+      hidden_size: 600
+      num_layers: 2
       bidirectional: True
       dropout: 0.5
-      output_type: "final_hidden"
+      output_type: "attention_pooling"
   decoder:
-    decoder_type: "gru_decoder"
+    decoder_type: "skip_gru_decoder"
     gru_decoder:
       embed_size: 300
       hidden_size: 600
-      num_layers: 1
+      num_layers: 2
       dropout: 0.5
       word_dropout: 0.5
       decoder_generator_tying: True
