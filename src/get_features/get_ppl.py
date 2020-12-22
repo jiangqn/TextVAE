@@ -5,10 +5,11 @@ from torchtext.data import TabularDataset, Iterator
 import pickle
 from typing import List
 from src.constants import SOS, EOS, PAD_INDEX
+from src.utils.generate_pad import generate_pad
 
 def get_ppl(model: nn.Module, data_iter: Iterator) -> List[float]:
 
-    criterion = nn.CrossEntropyLoss(ignore_index=PAD_INDEX, reduction='none')
+    criterion = nn.CrossEntropyLoss(ignore_index=PAD_INDEX, reduction="none")
 
     ppl = []
 
@@ -20,7 +21,7 @@ def get_ppl(model: nn.Module, data_iter: Iterator) -> List[float]:
             sentence = batch.sentence
             input_sentence = sentence
             batch_size = sentence.size(0)
-            pad = torch.zeros(size=(batch_size, 1), dtype=torch.long, device=sentence.device)
+            pad = generate_pad(size=(batch_size, 1), device=sentence.device)
             output_sentence = torch.cat((sentence[:, 1:], pad), dim=-1)
 
             logit = model(input_sentence)
@@ -39,29 +40,29 @@ def get_ppl(model: nn.Module, data_iter: Iterator) -> List[float]:
 
 def get_ppl_from_tsv(file_path: str, batch_size: int = 64, **kwargs) -> List[float]:
 
-    assert ('model_path' in kwargs) ^ ('model' in kwargs)
-    assert ('vocab_path' in kwargs) ^ ('vocab' in kwargs)
+    assert ("model_path" in kwargs) ^ ("model" in kwargs)
+    assert ("vocab_path" in kwargs) ^ ("vocab" in kwargs)
 
-    if 'model_path' in kwargs:
-        model = torch.load(kwargs['model_path'])
+    if "model_path" in kwargs:
+        model = torch.load(kwargs["model_path"])
     else:
-        model = kwargs['model']
+        model = kwargs["model"]
 
-    if 'vocab_path' in kwargs:
-        with open(kwargs['vocab_path'], 'rb') as handle:
+    if "vocab_path" in kwargs:
+        with open(kwargs["vocab_path"], "rb") as handle:
             vocab = pickle.load(handle)
     else:
-        vocab = kwargs['vocab']
+        vocab = kwargs["vocab"]
 
     TEXT = data.Field(sequential=True, lower=True, batch_first=True, init_token=SOS, eos_token=EOS)
     fields = [
-        ('sentence', TEXT)
+        ("sentence", TEXT)
     ]
 
-    test_data = TabularDataset(path=file_path, format='tsv', skip_header=True, fields=fields)
+    test_data = TabularDataset(path=file_path, format="tsv", skip_header=True, fields=fields)
     TEXT.vocab = vocab
 
-    device = torch.device('cuda:0')
+    device = torch.device("cuda:0")
     test_iter = Iterator(test_data, batch_size=batch_size, shuffle=False, device=device)
 
     return get_ppl(model, test_iter)

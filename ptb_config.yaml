@@ -2,6 +2,7 @@ seed: 42
 base_path: data/ptb
 glove_source_path: /home/jiangqn/datasets/embeddings/glove.840B.300d.txt
 max_len: 82
+features: ["length", "depth"]
 text_cnn:
   model:
     embed_size: 300
@@ -94,29 +95,31 @@ text_vae:
       word_dropout: 0.5
       decoder_generator_tying: True
       initial_hidden_type: "zero"
-  latent_size: 128
+  latent_size: 300
   encoder_decoder_tying: True
   training:
     batch_size: 64
-    beta: 1
+    beta: 0.7
     anneal:
       type: "linear"
       step: 10000
       offset: 5
     lr: 0.0003
     weight_decay: 0
-    epoches: 20
+    epoches: 30
     eval_freq: 100
     clip_grad_norm: 5.0
-vanilla_sample:
-  sample_num: 100000
-  save_encoding: True
-categorical_sample:
-  sample_num: 100000
-  save_encoding: False
-length_sample:
-  sample_num: 100000
-  save_encoding: False
-depth_sample:
-  sample_num: 100000
-  save_encoding: False
+sample:
+  vanilla_sample:
+    train_sample_num: 100000
+    dev_sample_num: 20000
+    test_sample_num: 100000
+  categorical_sample:
+    sample_num: 100000
+    save_encoding: False
+  length_sample:
+    sample_num: 100000
+    save_encoding: False
+  depth_sample:
+    sample_num: 100000
+    save_encoding: False

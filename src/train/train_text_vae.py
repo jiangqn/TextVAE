@@ -90,6 +90,7 @@ def train_text_vae(config: dict) -> None:
     corr_nll = 1e9
     corr_ppl = 1e9
     corr_loss = 1e9
+    corr_expected_loss = 1e9
     corr_wer = 1
     corr_forward_ppl = 1e9
     corr_epoch = 0
@@ -152,6 +153,7 @@ def train_text_vae(config: dict) -> None:
                 train_nll = total_nll / total_samples
                 train_ppl = math.exp(total_nll / total_tokens)
                 train_loss = total_loss / total_samples
+                train_expected_loss = train_reconstruction + train_kl * train_config["beta"]
                 train_wer = 1 - correct_tokens / total_tokens
 
                 total_tokens = 0
@@ -165,10 +167,11 @@ def train_text_vae(config: dict) -> None:
 
                 dev_reconstruction, dev_kl, dev_nll, dev_ppl, dev_wer, forward_ppl = eval_text_vae(model, dev_iter, criterion, kldiv, base_path, language_model=language_model, max_len=max_len)
                 dev_loss = dev_reconstruction + dev_kl * kl_annealer.anneal(global_step)
-                logger.info("[epoch %2d step %4d]\ttrain_reconstruction: %.4f train_kl: %.4f train_nll: %.4f train_ppl: %.4f train_loss: %.4f train_wer: %.4f"
-                    % (epoch, i, train_reconstruction, train_kl, train_nll, train_ppl, train_loss, train_wer))
-                logger.info("[epoch %2d step %4d]\tdev_reconstruction: %.4f dev_kl: %.4f dev_nll: %.4f dev_ppl: %.4f dev_loss: %.4f dev_wer: %.4f forward_ppl: %.4f"
-                            % (epoch, i, dev_reconstruction, dev_kl, dev_nll, dev_ppl, dev_loss, dev_wer, forward_ppl))
+                dev_expected_loss = dev_reconstruction + dev_kl * train_config["beta"]
+                logger.info("[epoch %2d step %4d]\ttrain_reconstruction: %.4f train_kl: %.4f train_nll: %.4f train_ppl: %.4f train_loss: %.4f train_expected_loss: %.4f train_wer: %.4f"
+                    % (epoch, i, train_reconstruction, train_kl, train_nll, train_ppl, train_loss, train_expected_loss, train_wer))
+                logger.info("[epoch %2d step %4d]\tdev_reconstruction: %.4f dev_kl: %.4f dev_nll: %.4f dev_ppl: %.4f dev_loss: %.4f dev_expected_loss: %.4f dev_wer: %.4f forward_ppl: %.4f"
+                            % (epoch, i, dev_reconstruction, dev_kl, dev_nll, dev_ppl, dev_loss, dev_expected_loss, dev_wer, forward_ppl))
 
                 writer.add_scalar("kl_weight", kl_annealer.anneal(global_step), global_step)
 
@@ -226,21 +229,26 @@ def train_text_vae(config: dict) -> None:
 
                 writer.add_scalar("forward_ppl", forward_ppl, global_step)
 
-                if dev_nll < corr_nll:
+                if dev_expected_loss < corr_expected_loss:
 
                     corr_reconstruction = dev_reconstruction
                     corr_kl = dev_kl
                     corr_nll = dev_nll
                     corr_ppl = dev_ppl
                     corr_loss = dev_loss
+                    corr_expected_loss = dev_expected_loss
                     corr_wer = dev_wer
                     corr_forward_ppl = forward_ppl
                     corr_epoch = epoch
                     corr_step = i
                     torch.save(model, save_path)
 
+        reverse_ppl = eval_reverse_ppl(config_copy)
+
+        print("[epoch %d] reverse_ppl: %.4f" % (epoch, reverse_ppl))
+
     reverse_ppl = eval_reverse_ppl(config_copy)
 
-    logger.info("[best checkpoint] at [epoch %2d step %4d] dev_reconstruction: %.4f dev_kl: %.4f dev_nll: %.4f dev_ppl: %.4f dev_loss: %.4f dev_wer: %.4f forward_ppl: %.4f reverse_ppl: %.4f"
-                % (corr_epoch, corr_step, corr_reconstruction, corr_kl, corr_nll, corr_ppl, corr_loss, corr_wer, corr_forward_ppl, reverse_ppl))
+    logger.info("[best checkpoint] at [epoch %2d step %4d] dev_reconstruction: %.4f dev_kl: %.4f dev_nll: %.4f dev_ppl: %.4f dev_loss: %.4f dev_loss: %.4f dev_wer: %.4f forward_ppl: %.4f reverse_ppl: %.4f"
+                % (corr_epoch, corr_step, corr_reconstruction, corr_kl, corr_nll, corr_ppl, corr_loss, corr_expected_loss, corr_wer, corr_forward_ppl, reverse_ppl))
     logger.info("finish")

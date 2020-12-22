@@ -9,25 +9,29 @@ from src.analyze.imlp import InvertibleMLP
 import os
 from copy import deepcopy
 from sklearn.linear_model import LinearRegression
-
+import math
 
 def train():
 
-    os.environ['CUDA_VISIBLE_DEVICES'] = "0"
+    os.environ['CUDA_VISIBLE_DEVICES'] = "2"
 
-    dataset = "yelp"
+    dataset = "ptb"
     feature_path = "data/%s/vanilla_sample_100000.npy" % dataset
     target_path = "data/%s/vanilla_sample_100000.tsv" % dataset
 
     batch_size = 100
     lr = 3e-4
     n_blocks = 1
+
     epoches = 20
-    weight_decay = 1e-3
-    momentum = 0.8
+    weight_decay = 3e-3
+    momentum = 0.9
 
     feature = np.load(feature_path)
-    target = pd.read_csv(target_path, delimiter="\t")["depth"]
+    target = pd.read_csv(target_path, delimiter="\t")["length"]
+
+    feature = feature.astype(np.float64)
+    target = target.astype(np.float64)
 
     # lr = LinearRegression()
     # lr.fit(feature[0:80000], target[0:80000])
@@ -62,19 +66,11 @@ def train():
         pin_memory=True
     )
 
-    # old_model = InvertibleResNet(
-    #     hidden_size=600,
-    #     target_size=1,
-    #     n_blocks=n_blocks
-    # )
-
-    model = InvertibleMLP(
-        hidden_size=600,
-        target_size=1
+    model = InvertibleResNet(
+        hidden_size=300,
+        target_size=1,
+        n_blocks=n_blocks
     )
-
-    # feature = torch.from_numpy(feature).double().cuda()
-    # target = torch.from_numpy(target).double().cuda()
 
     model = model.cuda()
 
@@ -133,8 +129,14 @@ def train():
     path = "iresnet.pkl"
     torch.save(best_model, path)
 
-# f = old_model.transform(feature).detach().cpu().numpy()
-# t = target[:, 0].cpu().detach().numpy()
-# lr = LinearRegression()
-# lr.fit(f, t)
-# print(epoch, i, math.sqrt(lr.score(f, t)))
+    target = target[:, 0]
+
+    lr = LinearRegression()
+    lr.fit(feature, target)
+    print(math.sqrt(lr.score(feature, target)))
+
+    feature = torch.from_numpy(feature).cuda()
+    feature = model.transform(feature).detach().cpu().numpy()
+    lr = LinearRegression()
+    lr.fit(feature, target)
+    print(math.sqrt(lr.score(feature, target)))

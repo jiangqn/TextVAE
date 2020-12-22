@@ -7,6 +7,7 @@ from src.train.eval import eval_text_vae
 from src.constants import SOS, EOS, PAD_INDEX
 from src.module.criterion.language_cross_entropy import LanguageCrossEntropyLoss
 from src.utils.gaussian_kldiv import GaussianKLDiv
+from src.train.eval_reverse_ppl import eval_reverse_ppl
 import math
 
 def test_vae(config: dict) -> None:
@@ -35,5 +36,6 @@ def test_vae(config: dict) -> None:
     kldiv = GaussianKLDiv(reduction="none")
 
     test_reconstruction, test_kl, test_nll, test_ppl, test_wer, forward_ppl = eval_text_vae(model, test_iter, criterion, kldiv, base_path, max_len=config['max_len'])
-    print('test_reconstruction: %.4f\ttest_kl: %.4f\ttest_nll: %.4f\ttest_ppl: %.4f\ttest_wer: %.4f\tforward_ppl: %.4f' %
-          (test_reconstruction, test_kl, test_nll, test_ppl, test_wer, forward_ppl))
+    reverse_ppl = eval_reverse_ppl(config)
+    print('test_reconstruction: %.4f\ttest_kl: %.4f\ttest_nll: %.4f\ttest_ppl: %.4f\ttest_wer: %.4f\tforward_ppl: %.4f\treverse_ppl: %.4f' %
+          (test_reconstruction, test_kl, test_nll, test_ppl, test_wer, forward_ppl, reverse_ppl))

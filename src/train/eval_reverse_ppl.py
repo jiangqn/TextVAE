@@ -38,7 +38,7 @@ def eval_reverse_ppl(config: dict, sample_path: str = None) -> float:
 
 		vae = torch.load(vae_path)
 
-		reverse_ppl_sample_num = config["vanilla_sample"]["sample_num"]
+		reverse_ppl_sample_num = config["sample"]["vanilla_sample"]["test_sample_num"]
 
 		batch_size = config["text_vae"]["training"]["batch_size"]
 
@@ -49,7 +49,7 @@ def eval_reverse_ppl(config: dict, sample_path: str = None) -> float:
 		logger.info("sample")
 
 		for batch_size in batch_sizes:
-			output = vae.sample(num=batch_size)
+			output = vae.sample(num=batch_size, max_len=config["max_len"])
 			sentences.extend(convert_tensor_to_texts(output, vocab))
 
 		sentences = [[sentence] for sentence in sentences]

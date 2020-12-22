@@ -78,12 +78,13 @@ class TextVAE(nn.Module):
         """
 
         assert ("num" in kwargs) ^ ("latent_variable" in kwargs)
+        assert "max_len" in kwargs
         if "num" in kwargs:
             latent_variable = torch.randn(size=(kwargs["num"], self.latent_size),
                                    device=self.encoder.embedding.weight.device)
         else:
             latent_variable = kwargs["latent_variable"]
-        max_len = kwargs.get("max_len", 15)
+        max_len = kwargs["max_len"]
         logit = self.decoder.decode(latent_variable, max_len)
         output = logit.argmax(dim=-1)
         return_list = [output]
