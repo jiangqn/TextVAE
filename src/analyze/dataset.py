@@ -14,12 +14,12 @@ class RegressionDataset(Dataset):
         assert len(latent_variable.shape) == 2
         assert len(sample_data) == latent_variable.shape[0]
 
-        self.latent_variable = torch.from_numpy(latent_variable)
+        self.latent_variable = torch.from_numpy(latent_variable).float()
         target = []
         for target_name in targets:
             target.append(np.asarray(sample_data[target_name]))
         target = np.stack(target, axis=1)
-        self.target = torch.from_numpy(target)
+        self.target = torch.from_numpy(target).float()
 
     def __len__(self):
         return self.target.size(0)

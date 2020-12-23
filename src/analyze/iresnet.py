@@ -2,7 +2,7 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 from src.analyze.spectral_norm import SpectralNorm
-torch.set_default_dtype(torch.float64)
+# torch.set_default_dtype(torch.float64)
 
 class InvertibleResNet(nn.Module):
 

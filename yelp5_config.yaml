@@ -2,6 +2,7 @@ seed: 42
 base_path: data/yelp5
 glove_source_path: /home/jiangqn/datasets/embeddings/glove.840B.300d.txt
 max_len: 50
+features: ["length", "depth"]
 text_cnn:
   model:
     embed_size: 300

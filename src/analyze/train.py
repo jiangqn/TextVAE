@@ -10,40 +10,76 @@ import os
 from copy import deepcopy
 from sklearn.linear_model import LinearRegression
 import math
+from src.analyze.multiple_correlation import multiple_correlation
+
+criterion = nn.MSELoss()
+
+def eval(model, dataloader):
+    model.eval()
+    total_samples = 0
+    total_loss = 0
+    with torch.no_grad():
+        for data in dataloader:
+            batch_feature, batch_target = data
+            batch_feature, batch_target = batch_feature.cuda(), batch_target.cuda()
+            batch_prediction = model(batch_feature)
+            loss = criterion(batch_prediction, batch_target)
+            total_samples += batch_target.size(0)
+            total_loss += loss.item() * batch_target.size(0)
+    loss = total_loss / total_samples
+    return loss
+
+
+def transform(model, dataloader):
+    model.eval()
+    feature = []
+    transformed_feature = []
+    target = []
+    with torch.no_grad():
+        for data in dataloader:
+            batch_feature, batch_target = data
+            batch_feature, batch_target = batch_feature.cuda(), batch_target.cuda()
+            batch_transformed_feature = model.transform(batch_feature)
+            feature.append(batch_feature)
+            transformed_feature.append(batch_transformed_feature)
+            target.append(batch_target)
+    feature = torch.cat(feature, dim=0)
+    transformed_feature = torch.cat(transformed_feature, dim=0)
+    target = torch.cat(target, dim=0).squeeze(-1)
+
+    return feature, transformed_feature, target
+
 
 def train():
 
-    os.environ['CUDA_VISIBLE_DEVICES'] = "2"
+    os.environ['CUDA_VISIBLE_DEVICES'] = "1"
 
     dataset = "ptb"
-    feature_path = "data/%s/vanilla_sample_100000.npy" % dataset
-    target_path = "data/%s/vanilla_sample_100000.tsv" % dataset
+    base_path = os.path.join("data", dataset)
 
     batch_size = 100
     lr = 3e-4
-    n_blocks = 1
+    n_blocks = 3
 
     epoches = 20
-    weight_decay = 3e-3
+    weight_decay = 1e-4
     momentum = 0.9
 
-    feature = np.load(feature_path)
-    target = pd.read_csv(target_path, delimiter="\t")["length"]
-
-    feature = feature.astype(np.float64)
-    target = target.astype(np.float64)
-
-    # lr = LinearRegression()
-    # lr.fit(feature[0:80000], target[0:80000])
-    # a = lr.predict(feature[90000:100000])
-    # n = np.square(a - target[90000: 100000]).mean()
-    # print(n)
-
-    target = np.asarray(target)[:, np.newaxis]
-
-    train_dataset = RegressionDataset(feature[0:80000], target[0:80000])
-    dev_dataset = RegressionDataset(feature[80000:90000], target[80000:90000])
-    test_dataset = RegressionDataset(feature[90000:100000], target[90000:100000])
+    train_dataset = RegressionDataset(
+        sample_path=os.path.join(base_path, "vanilla_sample_train.tsv"),
+        latent_variable_path=os.path.join(base_path, "vanilla_sample_train.npy"),
+        targets=["depth"]
+    )
+    dev_dataset = RegressionDataset(
+        sample_path=os.path.join(base_path, "vanilla_sample_dev.tsv"),
+        latent_variable_path=os.path.join(base_path, "vanilla_sample_dev.npy"),
+        targets=["depth"]
+    )
+    test_dataset = RegressionDataset(
+        sample_path=os.path.join(base_path, "vanilla_sample_test.tsv"),
+        latent_variable_path=os.path.join(base_path, "vanilla_sample_test.npy"),
+        targets=["depth"]
+    )
 
     train_loader = DataLoader(
         dataset=train_dataset,
@@ -74,23 +110,7 @@ def train():
 
     model = model.cuda()
 
-    criterion = nn.MSELoss()
     optimizer = optim.SGD(model.parameters(), lr=lr, momentum=momentum, weight_decay=weight_decay)
-
-    def eval(model, dataloader):
-        model.eval()
-        total_samples = 0
-        total_loss = 0
-        with torch.no_grad():
-            for data in dataloader:
-                batch_feature, batch_target = data
-                batch_feature, batch_target = batch_feature.cuda(), batch_target.cuda()
-                batch_prediction = model(batch_feature)
-                loss = criterion(batch_prediction, batch_target)
-                total_samples += batch_target.size(0)
-                total_loss += loss.item() * batch_target.size(0)
-        loss = total_loss / total_samples
-        return loss
 
     total_samples = 0
     total_loss = 0
@@ -129,14 +149,6 @@ def train():
     path = "iresnet.pkl"
     torch.save(best_model, path)
 
-    target = target[:, 0]
-
-    lr = LinearRegression()
-    lr.fit(feature, target)
-    print(math.sqrt(lr.score(feature, target)))
-
-    feature = torch.from_numpy(feature).cuda()
-    feature = model.transform(feature).detach().cpu().numpy()
-    lr = LinearRegression()
-    lr.fit(feature, target)
-    print(math.sqrt(lr.score(feature, target)))
+    feature, transformed_feature, target = transform(best_model, test_loader)
+    print(multiple_correlation(feature, target))
+    print(multiple_correlation(transformed_feature, target))
