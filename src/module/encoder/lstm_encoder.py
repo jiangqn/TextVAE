@@ -4,7 +4,7 @@ import torch.nn.functional as F
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 from src.module.encoder.encoder import Encoder
 from src.constants import PAD_INDEX
-from src.module.attention import get_attention
+from src.module.attention.attention import get_attention
 
 class LSTMEncoder(Encoder):
 

@@ -243,9 +243,9 @@ def train_text_vae(config: dict) -> None:
                     corr_step = i
                     torch.save(model, save_path)
 
-        reverse_ppl = eval_reverse_ppl(config_copy)
-
-        print("[epoch %d] reverse_ppl: %.4f" % (epoch, reverse_ppl))
+            if global_step > 0 and global_step % 5000 == 0:
+                reverse_ppl = eval_reverse_ppl(config_copy)
+                print("[epoch %d] reverse_ppl: %.4f" % (epoch, reverse_ppl))
 
     reverse_ppl = eval_reverse_ppl(config_copy)
 

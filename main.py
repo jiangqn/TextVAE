@@ -7,7 +7,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--model", type=str, default="text_vae", choices=["text_vae", "text_cnn", "lm"])
 parser.add_argument("--task", type=str, default="train", choices=["preprocess", "train", "test", "vanilla_sample", "get_features", "correlation",
         "visualize", "pca_visualize", "tsne_visualize", "linear_separate", "categorical_sample", "compute_projection_statistics", "sentiment_sample", "length_sample", "depth_sample",
-        "test_vae_encoding", "sentiment_transfer", "eval_reverse_ppl", "measure_disentanglement", "length_interpolate"])
+        "test_vae_encoding", "sentiment_transfer", "eval_reverse_ppl", "measure_disentanglement", "length_interpolate", "compute_aggregated_posterior"])
 parser.add_argument("--gpu", type=int, default=0, choices=[i for i in range(8)])
 parser.add_argument("--config", type=str, default="yelp_config.yaml")
 
@@ -78,6 +78,9 @@ elif args.model == "text_vae":
     elif args.task == "length_interpolate":
         from src.sample.length_interpolate import length_interpolate
         length_interpolate(config)
+    elif args.task == "compute_aggregated_posterior":
+        from src.sample.compute_aggregated_posterior import compute_aggregated_posterior
+        compute_aggregated_posterior(config)
 elif args.model == "lm":
     if args.task == "train":
         from src.train.train_language_model import train_language_model

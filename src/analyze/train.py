@@ -52,9 +52,9 @@ def transform(model, dataloader):
 
 def train():
 
-    os.environ['CUDA_VISIBLE_DEVICES'] = "1"
+    os.environ['CUDA_VISIBLE_DEVICES'] = "2"
 
-    dataset = "ptb"
+    dataset = "yelp2"
     base_path = os.path.join("data", dataset)
 
     batch_size = 100
@@ -68,17 +68,17 @@ def train():
     train_dataset = RegressionDataset(
         sample_path=os.path.join(base_path, "vanilla_sample_train.tsv"),
         latent_variable_path=os.path.join(base_path, "vanilla_sample_train.npy"),
-        targets=["depth"]
+        targets=["length"]
     )
     dev_dataset = RegressionDataset(
         sample_path=os.path.join(base_path, "vanilla_sample_dev.tsv"),
         latent_variable_path=os.path.join(base_path, "vanilla_sample_dev.npy"),
-        targets=["depth"]
+        targets=["length"]
     )
     test_dataset = RegressionDataset(
         sample_path=os.path.join(base_path, "vanilla_sample_test.tsv"),
         latent_variable_path=os.path.join(base_path, "vanilla_sample_test.npy"),
-        targets=["depth"]
+        targets=["length"]
     )
 
     train_loader = DataLoader(
@@ -103,7 +103,7 @@ def train():
     )
 
     model = InvertibleResNet(
-        hidden_size=300,
+        hidden_size=100,
         target_size=1,
         n_blocks=n_blocks
     )

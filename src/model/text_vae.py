@@ -1,10 +1,13 @@
 import torch
 from torch import nn
+from torch import optim
 import torch.nn.functional as F
 from src.module.encoder.encoder import Encoder
 from src.module.decoder.decoder import Decoder
 from typing import Tuple
 import numpy as np
+from src.utils.generate_pad import generate_pad
+from src.constants import PAD_INDEX
 
 class TextVAE(nn.Module):
 
@@ -58,6 +61,61 @@ class TextVAE(nn.Module):
         posterior_std = torch.exp(self.posterior_std_projection(encoder_representation))
         return posterior_mean, posterior_std
 
+    def gradient_encode(self, sentence: torch.Tensor, **kwargs) -> torch.Tensor:
+        """
+        :param sentence: torch.LongTensor (batch_size, seq_len)
+        :return latent_variable: torch.FloatTensor (batch_size, latent_size)
+        """
+
+        lr = kwargs.get('lr', 0.3)
+        weight_deacy = kwargs.get('weight_decay', 0)
+        max_iter = kwargs.get('max_iter', 100)
+
+        src = sentence[:, 1:]
+        trg_input = sentence
+        batch_size = sentence.size(0)
+        pad = generate_pad(size=(batch_size, 1), device=sentence.device)
+        trg_output = torch.cat((sentence[:, 1:], pad), dim=-1)
+
+        posterior_mean, posterior_std = self.encode(src)
+        latent_variable = nn.Parameter(posterior_mean)
+
+        optimizer = optim.Adam([latent_variable], lr=lr, weight_decay=weight_deacy)
+
+        criterion = nn.CrossEntropyLoss(ignore_index=PAD_INDEX)
+
+        min_loss = 1e9
+        best_latent_variable = latent_variable.data
+        best_i = 0
+
+        for i in range(max_iter):
+
+            optimizer.zero_grad()
+
+            logit = self.decoder(latent_variable, trg_input)
+            trg_output = trg_output.view(-1)
+            output_size = logit.size(-1)
+            logit = logit.view(-1, output_size)
+
+            loss = criterion(logit, trg_output)
+            loss.backward()
+
+            optimizer.step()
+
+            mask = (trg_output != PAD_INDEX)
+            prediction = logit.argmax(dim=-1)
+            accuracy = (prediction.masked_select(mask) == trg_output.masked_select(mask)).float().mean().item()
+
+            if loss.item() < min_loss:
+                min_loss = loss.item()
+                best_latent_variable = latent_variable.data
+                best_i = i
+                # print(i, accuracy)
+
+        # print(best_latent_variable.std(dim=1))
+
+        return best_latent_variable
+
     def reparametrize(self, posterior_mean: torch.Tensor, posterior_std: torch.Tensor) -> torch.Tensor:
         """
         :param posterior_mean: torch.FloatTensor (batch_size, latent_size)
@@ -80,6 +138,10 @@ class TextVAE(nn.Module):
         assert ("num" in kwargs) ^ ("latent_variable" in kwargs)
         assert "max_len" in kwargs
         if "num" in kwargs:
+            # aggregated_posterior = np.load("/home/data_ti5_c/jiangqn/workspace/TextVAE/data/yelp2/aggregated_posterior.npz")
+            # mean = torch.from_numpy(aggregated_posterior["aggregated_posterior_mean"]).float().to(self.encoder.embedding.weight.device)
+            # std = torch.from_numpy(aggregated_posterior["aggregated_posterior_std"]).float().to(
+            #     self.encoder.embedding.weight.device)
             latent_variable = torch.randn(size=(kwargs["num"], self.latent_size),
                                    device=self.encoder.embedding.weight.device)
         else:
