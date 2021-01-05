@@ -44,7 +44,7 @@ def get_categorical_features_from_tsv(file_path, batch_size, **kwargs) -> list:
     if 'model_path' in kwargs:
         model = torch.load(kwargs['model_path'])
     else:
-        model = kwargs['old_model']
+        model = kwargs['model']
 
     if 'vocab_path' in kwargs:
         with open(kwargs['vocab_path'], 'rb') as handle:

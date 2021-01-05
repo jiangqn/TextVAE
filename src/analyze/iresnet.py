@@ -6,11 +6,11 @@ from src.analyze.spectral_norm import SpectralNorm
 
 class InvertibleResNet(nn.Module):
 
-    def __init__(self, hidden_size: int,  target_size: int, n_blocks: int = 1) -> None:
+    def __init__(self, hidden_size: int, n_blocks: int = 1, output_size: int = 1) -> None:
         super(InvertibleResNet, self).__init__()
         self.n_blocks = n_blocks
         self.residual_blocks = nn.ModuleList(InvertibleResidualBlock(hidden_size) for _ in range(n_blocks))
-        self.linear = nn.Linear(hidden_size, target_size)
+        self.linear = nn.Linear(hidden_size, output_size)
 
     def forward(self, X: torch.FloatTensor) -> torch.FloatTensor:
         Y = self.transform(X)

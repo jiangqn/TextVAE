@@ -7,7 +7,7 @@ from src.utils.convert_tensor_to_texts import convert_tensor_to_texts
 from src.get_features.get_ppl import get_ppl_from_tsv
 from src.constants import PAD_INDEX
 
-def sample_eval_by_language_model(model, base_path, sample_num=1000, batch_size=64, **kwargs):
+def sample_eval_by_language_model(model, base_path, sample_num=10000, batch_size=64, **kwargs):
 
     vocab_path = os.path.join(base_path, 'vocab.pkl')
     language_model_path = os.path.join(base_path, 'language_model.pkl')

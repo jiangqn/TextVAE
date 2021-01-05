@@ -52,9 +52,9 @@ def transform(model, dataloader):
 
 def train():
 
-    os.environ['CUDA_VISIBLE_DEVICES'] = "2"
+    os.environ['CUDA_VISIBLE_DEVICES'] = "6"
 
-    dataset = "yelp2"
+    dataset = "yelp"
     base_path = os.path.join("data", dataset)
 
     batch_size = 100
@@ -63,7 +63,7 @@ def train():
 
     epoches = 20
     weight_decay = 1e-4
-    momentum = 0.9
+    momentum = 0.8
 
     train_dataset = RegressionDataset(
         sample_path=os.path.join(base_path, "vanilla_sample_train.tsv"),
@@ -104,8 +104,8 @@ def train():
 
     model = InvertibleResNet(
         hidden_size=100,
-        target_size=1,
-        n_blocks=n_blocks
+        n_blocks=n_blocks,
+        output_size=1
     )
 
     model = model.cuda()

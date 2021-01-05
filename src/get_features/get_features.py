@@ -26,7 +26,7 @@ def get_features(config: dict) -> None:
 
         if "label" in config["features"]:
             print("get categorical features")
-            label = get_categorical_features_from_tsv(file_path=vanilla_sample_save_path, batch_size=config["text_cnn"]["batch_size"],
+            label = get_categorical_features_from_tsv(file_path=vanilla_sample_save_path, batch_size=config["text_cnn"]["training"]["batch_size"],
                 model_path=text_cnn_path, vocab_path=vocab_path, output_category=True)
             df["label"] = label
 
@@ -44,4 +44,4 @@ def get_features(config: dict) -> None:
             depth = get_depth(sentences, processes=20)
             df["depth"] = depth
 
-        df.to_csv(vanilla_sample_save_path, sep="\t")
+        df.to_csv(vanilla_sample_save_path, sep="\t", index=False)
