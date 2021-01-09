@@ -6,6 +6,7 @@ from src.utils.set_seed import set_seed
 parser = argparse.ArgumentParser()
 parser.add_argument("--model", type=str, default="text_vae", choices=["text_vae", "text_cnn", "lm"])
 parser.add_argument("--task", type=str, default="train", choices=["preprocess", "train", "test", "vanilla_sample", "get_features", "correlation",
+        "length_analyze", "depth_analyze",
         "visualize", "pca_visualize", "tsne_visualize", "linear_separate", "categorical_sample", "compute_projection_statistics", "sentiment_sample", "length_sample", "depth_sample",
         "test_vae_encoding", "sentiment_transfer", "eval_reverse_ppl", "measure_disentanglement", "length_interpolate", "compute_aggregated_posterior"])
 parser.add_argument("--gpu", type=int, default=0, choices=[i for i in range(8)])
@@ -34,6 +35,12 @@ elif args.model == "text_vae":
     elif args.task == "get_features":
         from src.get_features.get_features import get_features
         get_features(config)
+    elif args.task == "length_analyze":
+        from src.analyze.length_analyze import length_analyze
+        length_analyze(config)
+    elif args.task == "depth_analyze":
+        from src.analyze.depth_analyze import depth_analyze
+        depth_analyze(config)
     elif args.task == "correlation":
         from src.utils.correlation import correlation
         correlation(config)
@@ -56,13 +63,9 @@ elif args.model == "text_vae":
         from src.utils.compute_projection_statistics import compute_projection_statistics
         compute_projection_statistics(config)
     elif args.task == "length_sample":
-        # from src.sample.syntax_sample import syntax_sample
-        # syntax_sample(config, "length")
         from src.sample.length_sample import length_sample
         length_sample(config)
     elif args.task == "depth_sample":
-        # from src.sample.syntax_sample import syntax_sample
-        # syntax_sample(config, "depth")
         from src.sample.depth_sample import depth_sample
         depth_sample(config)
     elif args.task == "test_vae_encoding":
