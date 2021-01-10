@@ -18,6 +18,9 @@ class RegressionAnalyzer(object):
         self.model = self.model.cuda()
         self.save_path = os.path.join(base_path, "%s_iresnet.pkl" % target_name)
 
+    def load_model(self):
+        self.model = torch.load(self.save_path)
+
     def fit(self, batch_size: int = 100, lr: float = 3e-4, momentum: float = 0.8, weight_decay: float = 3e-4, num_epoches: int = 10) -> None:
         train_dataset = RegressionDataset(
             sample_path=os.path.join(self.base_path, "vanilla_sample_train.tsv"),
@@ -130,3 +133,40 @@ class RegressionAnalyzer(object):
         transformed_correlation = multiple_correlation(transformed_latent_variable, target)
 
         return loss, correlation, transformed_correlation
+
+    def get_data(self, batch_size: int = 100) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+
+        test_dataset = RegressionDataset(
+            sample_path=os.path.join(self.base_path, "vanilla_sample_test.tsv"),
+            latent_variable_path=os.path.join(self.base_path, "vanilla_sample_test.npy"),
+            targets=[self.target_name]
+        )
+        test_loader = DataLoader(
+            dataset=test_dataset,
+            batch_size=batch_size,
+            shuffle=False,
+            pin_memory=True
+        )
+
+        self.model.eval()
+
+        latent_variable_list = []
+        transformed_latent_variable_list = []
+        target_list = []
+
+        with torch.no_grad():
+            for data in test_loader:
+                latent_variable, target = data
+                latent_variable, target = latent_variable.cuda(), target.cuda()
+
+                transformed_latent_variable = self.model.transform(latent_variable)
+                latent_variable_list.append(latent_variable)
+                transformed_latent_variable_list.append(transformed_latent_variable)
+                target_list.append(target)
+
+        latent_variable = torch.cat(latent_variable_list, dim=0)
+        transformed_latent_variable = torch.cat(transformed_latent_variable_list, dim=0)
+        target = torch.cat(target_list, dim=0)
+        target = target.squeeze(-1)
+
+        return latent_variable, transformed_latent_variable, target
