@@ -9,13 +9,15 @@ from src.utils.tsv_reader import read_field
 
 def get_features(config: dict) -> None:
 
+    import torch
+
+    os.environ["CUDA_VISIBLE_DEVICES"] = str(config["gpu"])
+
     base_path = config["base_path"]
 
     for division in ["train", "dev", "test"]:
 
         vanilla_sample_save_path = os.path.join(base_path, "vanilla_sample_%s.tsv" % division)
-
-        os.environ["CUDA_VISIBLE_DEVICES"] = str(config["gpu"])
 
         vocab_path = os.path.join(base_path, "vocab.pkl")
         text_cnn_path = os.path.join(base_path, "text_cnn.pkl")

@@ -6,7 +6,7 @@ from src.utils.set_seed import set_seed
 parser = argparse.ArgumentParser()
 parser.add_argument("--model", type=str, default="text_vae", choices=["text_vae", "text_cnn", "lm"])
 parser.add_argument("--task", type=str, default="train", choices=["preprocess", "train", "test", "vanilla_sample", "get_features", "correlation",
-        "length_analyze", "depth_analyze",
+        "length_analyze", "depth_analyze", "category_analyze",
         "visualize", "pca_visualize", "tsne_visualize", "linear_separate", "categorical_sample", "compute_projection_statistics", "sentiment_sample", "length_sample", "depth_sample",
         "test_vae_encoding", "sentiment_transfer", "eval_reverse_ppl", "measure_disentanglement", "length_interpolate", "compute_aggregated_posterior"])
 parser.add_argument("--gpu", type=int, default=0, choices=[i for i in range(8)])
@@ -41,6 +41,9 @@ elif args.model == "text_vae":
     elif args.task == "depth_analyze":
         from src.analyze.depth_analyze import depth_analyze
         depth_analyze(config)
+    elif args.task == "category_analyze":
+        from src.analyze.category_analyze import category_analyze
+        category_analyze(config)
     elif args.task == "correlation":
         from src.utils.correlation import correlation
         correlation(config)

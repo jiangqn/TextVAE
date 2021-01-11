@@ -27,7 +27,7 @@ def depth_analyze(config: dict) -> None:
                                                                        target).cpu().numpy()
     target = target.cpu().numpy()
 
-    plt.figure(figsize=(16, 14))
+    plt.figure(figsize=(16, 13))
 
     plt.subplot(2, 2, 1)
 
@@ -57,3 +57,13 @@ def depth_analyze(config: dict) -> None:
 
     figure_save_path = os.path.join(base_path, "depth_visualization.png")
     plt.savefig(figure_save_path)
+
+    plt.clf()
+
+    plt.figure(figsize=(8, 5))
+    plt.hist(target, bins=45)
+    plt.title("depth histogram")
+    plt.xlabel("depth")
+    plt.ylabel("frequency")
+    distribution_figure_save_path = os.path.join(base_path, "depth_distribution.png")
+    plt.savefig(distribution_figure_save_path)
