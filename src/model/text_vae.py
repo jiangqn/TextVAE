@@ -137,16 +137,12 @@ class TextVAE(nn.Module):
 
         assert ("num" in kwargs) ^ ("latent_variable" in kwargs)
         assert "max_len" in kwargs
+        lambd = kwargs.get("lambd", 0.3)
         if "num" in kwargs:
-            aggregated_posterior = np.load("/home/data_ti5_c/jiangqn/workspace/TextVAE/data/yelp/aggregated_posterior.npz")
-            mean = torch.from_numpy(aggregated_posterior["mean"]).float().to(self.encoder.embedding.weight.device)
-            std = torch.from_numpy(aggregated_posterior["std"]).float().to(
-                self.encoder.embedding.weight.device)
-            lambd = 0.5
-            mean = lambd * mean + (1 - lambd) * torch.zeros(size=mean.size(), dtype=torch.float, device=mean.device)
-            std = lambd * std + (1 - lambd) * torch.ones(size=std.size(), dtype=torch.float, device=std.device)
-            latent_variable = torch.randn(size=(kwargs["num"], self.latent_size),
-                                   device=self.encoder.embedding.weight.device) * std + mean
+            device = self.encoder.embedding.weight.device
+            U = torch.randn(size=(kwargs["num"], self.latent_size), device=device)
+            V = U.matmul(self.aggregated_posterior_weight) + self.aggregated_posterior_mean
+            latent_variable = (1 - lambd) * U + lambd * V
         else:
             latent_variable = kwargs["latent_variable"]
         max_len = kwargs["max_len"]
