@@ -49,20 +49,11 @@ def compute_aggregated_posterior(config: dict) -> None:
     aggregated_posterior_std = latent_variable.std(dim=0)
     aggregated_posterior_cov = cov(latent_variable)
 
-    U, s, V = torch.svd(aggregated_posterior_cov)
-    aggregated_posterior_weight = U.matmul(torch.diag(torch.sqrt(s)))
-    # W = U.matmul(torch.diag(torch.sqrt(s))).matmul(U.t())
-
-    model.register_buffer("aggregated_posterior_mean", aggregated_posterior_mean)
-    model.register_buffer("aggregated_posterior_weight", aggregated_posterior_weight)
-    torch.save(model, save_path)
-
     aggregated_posterior_mean = aggregated_posterior_mean.cpu().numpy()
     aggregated_posterior_std = aggregated_posterior_std.cpu().numpy()
     aggregated_posterior_cov = aggregated_posterior_cov.cpu().numpy()
-    aggregated_posterior_weight = aggregated_posterior_weight.cpu().numpy()
 
     aggregated_posterior_path = os.path.join(base_path, "aggregated_posterior.npz")
 
     np.savez(aggregated_posterior_path, mean=aggregated_posterior_mean, std=aggregated_posterior_std,
-             cov=aggregated_posterior_cov, weight=aggregated_posterior_weight)
+             cov=aggregated_posterior_cov)

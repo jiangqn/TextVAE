@@ -8,5 +8,6 @@ class TransformerEncoder(Encoder):
                  num_layers: int, num_heads: int, dropout: int) -> None:
         super(TransformerEncoder, self).__init__()
 
+
     def forward(self, src: torch.Tensor) -> torch.Tensor:
         pass
