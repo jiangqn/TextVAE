@@ -1,7 +1,7 @@
 import torch
 from torch import nn
 from torch.nn.init import constant_
-from src.constants import PAD_INDEX, UNK_INDEX
+from src.constants import PAD_INDEX, UNK_INDEX, SOS_INDEX, EOS_INDEX
 
 class Decoder(nn.Module):
 
@@ -42,7 +42,7 @@ class Decoder(nn.Module):
         :return mask * trg: torch.LongTensor (batch_size, seq_len)
         """
 
-        pad_mask = (trg == PAD_INDEX)
+        pad_mask = (trg == PAD_INDEX) | (trg == SOS_INDEX) | (trg == EOS_INDEX)
         p = torch.FloatTensor(trg.size()).to(trg.device)
         constant_(p, 1 - self.word_dropout)
         mask = torch.bernoulli(p).long()

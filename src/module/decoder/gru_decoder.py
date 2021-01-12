@@ -57,7 +57,6 @@ class GRUDecoder(Decoder):
 
         if self.training:
             trg = self._word_dropout(trg)
-        # trg = self._word_dropout(trg)
 
         hidden = self._initial_hidden(latent_variable)
 

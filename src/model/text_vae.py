@@ -137,7 +137,6 @@ class TextVAE(nn.Module):
 
         assert ("num" in kwargs) ^ ("latent_variable" in kwargs)
         assert "max_len" in kwargs
-        lambd = kwargs.get("lambd", 0.4)
         if "num" in kwargs:
             device = self.encoder.embedding.weight.device
             # U = torch.randn(size=(kwargs["num"], self.latent_size), device=device)
