@@ -35,7 +35,15 @@ class PositionalEncoding(nn.Module):
         """Embed inputs.
         Args:
             emb (FloatTensor): Sequence of word vectors
-                ``(seq_len, batch_size, self.dim)``
+                ``(batch_size, seq_len, self.dim)``
         """
         # Add position encodings
         return emb + self.pe[:, :emb.size(1)]
+
+    def efficient_forward(self, emb: torch.Tensor, index: int) -> torch.Tensor:
+        """
+        :param emb: torch.FloatTensor (batch_size, 1, size)
+        :param index: int
+        :return : torch.FloatTensor (batch_size, 1, size)
+        """
+        return emb + self.pe[:, index: index + 1]
