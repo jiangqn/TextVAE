@@ -6,12 +6,14 @@ from src.module.encoder.bow_mlp_encoder import BOWMLPEncoder
 from src.module.encoder.conv_encoder import ConvEncoder
 from src.module.encoder.gru_encoder import GRUEncoder
 from src.module.encoder.lstm_encoder import LSTMEncoder
+from src.module.encoder.transformer_encoder import TransformerEncoder
 
 from src.module.decoder.decoder import Decoder
 from src.module.decoder.gru_decoder import GRUDecoder
 from src.module.decoder.lstm_decoder import LSTMDecoder
 from src.module.decoder.skip_gru_decoder import SkipGRUDecoder
 from src.module.decoder.skip_lstm_decoder import SkipLSTMDecoder
+from src.module.decoder.transformer_decoder import TransformerDecoder
 
 def build_encoder(encoder_config: dict) -> Encoder:
     vocab_size = encoder_config["vocab_size"]
@@ -58,6 +60,16 @@ def build_encoder(encoder_config: dict) -> Encoder:
             bidirectional=encoder_config["bidirectional"],
             dropout=encoder_config["dropout"],
             output_type=encoder_config["output_type"]
+        )
+    elif encoder_type == "transformer_encoder":
+        encoder = TransformerEncoder(
+            vocab_size=vocab_size,
+            embed_size=encoder_config["embed_size"],
+            hidden_size=encoder_config["hidden_size"],
+            ff_size=encoder_config["ff_size"],
+            num_layers=encoder_config["num_layers"],
+            num_heads=encoder_config["num_heads"],
+            dropout=encoder_config["dropout"]
         )
     else:
         raise ValueError("encoder_type: %s is error." % encoder_type)
@@ -115,6 +127,19 @@ def build_decoder(decoder_config: dict) -> Decoder:
             word_dropout=decoder_config["word_dropout"],
             decoder_generator_tying=decoder_config["decoder_generator_tying"],
             initial_hidden_type=decoder_config["initial_hidden_type"]
+        )
+    elif decoder_type == "transformer_decoder":
+        decoder = TransformerDecoder(
+            vocab_size=vocab_size,
+            embed_size=decoder_config["embed_size"],
+            hidden_size=decoder_config["hidden_size"],
+            latent_size=latent_size,
+            ff_size=decoder_config["ff_size"],
+            num_layers=decoder_config["num_layers"],
+            num_heads=decoder_config["num_heads"],
+            dropout=decoder_config["dropout"],
+            word_dropout=decoder_config["word_dropout"],
+            decoder_generator_tying=decoder_config["decoder_generator_tying"]
         )
     else:
         raise ValueError("decoder_type: %s is error." % decoder_type)

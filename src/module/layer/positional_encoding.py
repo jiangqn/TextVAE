@@ -38,7 +38,7 @@ class PositionalEncoding(nn.Module):
                 ``(batch_size, seq_len, self.dim)``
         """
         # Add position encodings
-        return emb + self.pe[:, :emb.size(1)]
+        return emb * math.sqrt(self.dim) + self.pe[:, :emb.size(1)]
 
     def efficient_forward(self, emb: torch.Tensor, index: int) -> torch.Tensor:
         """
@@ -46,4 +46,4 @@ class PositionalEncoding(nn.Module):
         :param index: int
         :return : torch.FloatTensor (batch_size, 1, size)
         """
-        return emb + self.pe[:, index: index + 1]
+        return emb * math.sqrt(self.dim) + self.pe[:, index: index + 1]

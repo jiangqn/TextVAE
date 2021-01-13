@@ -1,7 +1,7 @@
 seed: 42
 base_path: data/yelp
 glove_source_path: /home/jiangqn/datasets/embeddings/glove.840B.300d.txt
-max_len: 50
+max_len: 40
 features: ["label", "length", "depth"]
 text_cnn:
   model:
@@ -33,7 +33,7 @@ language_model:
     max_patience: 20
 text_vae:
   encoder:
-    encoder_type: "gru_encoder"
+    encoder_type: "transformer_encoder"
     bow_encoder:
       embed_size: 300
       dropout: 0.5
@@ -61,8 +61,15 @@ text_vae:
       bidirectional: True
       dropout: 0.5
       output_type: "attention_pooling"
+    transformer_encoder:
+      embed_size: 300
+      hidden_size: 512
+      ff_size: 1024
+      num_layers: 3
+      num_heads: 4
+      dropout: 0.5
   decoder:
-    decoder_type: "gru_decoder"
+    decoder_type: "transformer_decoder"
     gru_decoder:
       embed_size: 300
       hidden_size: 600
@@ -95,6 +102,15 @@ text_vae:
       word_dropout: 0.5
       decoder_generator_tying: True
       initial_hidden_type: "zero"
+    transformer_decoder:
+      embed_size: 300
+      hidden_size: 512
+      ff_size: 1024
+      num_layers: 2
+      num_heads: 4
+      dropout: 0.5
+      word_dropout: 0.5
+      decoder_generator_tying: True
   latent_size: 100
   encoder_decoder_tying: True
   training:
@@ -104,9 +120,9 @@ text_vae:
       type: "linear"
       step: 10000
       offset: 5
-    lr: 0.001
+    lr: 0.0001
     weight_decay: 0
-    epoches: 20
+    epoches: 5
     eval_freq: 100
     clip_grad_norm: 5.0
 sample:

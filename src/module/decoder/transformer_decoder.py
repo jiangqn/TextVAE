@@ -13,7 +13,7 @@ class TransformerDecoder(Decoder):
                  num_layers: int, num_heads: int, dropout: float, word_dropout: float, decoder_generator_tying: bool) -> None:
         super(TransformerDecoder, self).__init__()
         self.embedding = nn.Embedding(num_embeddings=vocab_size, embedding_dim=embed_size)
-        self.pe = PositionalEncoding(hidden_size, max_len=100)
+        self.pe = PositionalEncoding(embed_size, max_len=100)
         self.embedding_projection = nn.Linear(embed_size, hidden_size, bias=False)
         self.embedding_dropout = nn.Dropout(dropout)
         self.word_dropout = word_dropout
@@ -28,9 +28,12 @@ class TransformerDecoder(Decoder):
             for _ in range(num_layers)
         ])
         self.layer_norm = nn.LayerNorm(hidden_size, eps=1e-6)
-        self.generator = nn.Linear(hidden_size, vocab_size)
+        self.output_projection = nn.Linear(hidden_size, embed_size, bias=False)
+        self.output_layer_norm = nn.LayerNorm(embed_size, eps=1e-6)
+        self.generator = nn.Linear(embed_size, vocab_size)
         if decoder_generator_tying:
             self.generator.weight = self.embedding.weight
+            # self.output_projection.weight = self.embedding_projection.weight.t()
 
     def forward(self, latent_variable: torch.Tensor, trg: torch.Tensor) -> torch.Tensor:
         """
@@ -43,7 +46,6 @@ class TransformerDecoder(Decoder):
             trg = self._word_dropout(trg)
 
         batch_size, seq_len = trg.size()
-
         mask = (trg != PAD_INDEX).unsqueeze(1)
         mask = mask & subsequent_mask(seq_len).type_as(mask)
 
@@ -56,6 +58,8 @@ class TransformerDecoder(Decoder):
             x = layer(x, latent_variable, mask)
 
         x = self.layer_norm(x)
+        x = self.output_projection(x)
+        x = self.output_layer_norm(x)
         logit = self.generator(x)
 
         return logit
@@ -70,6 +74,7 @@ class TransformerDecoder(Decoder):
         trg = torch.tensor([SOS_INDEX] * batch_size, dtype=torch.long, device=latent_variable.device).unsqueeze(-1)
         logit = []
         for i in range(max_len):
+            # print(i)
             token_logit = self.forward(latent_variable, trg)[:, -1] # (batch_size, vocab_size)
             if i == 0:
                 token_logit[:, EOS_INDEX] = 0
@@ -89,15 +94,24 @@ class TransformerDecoder(Decoder):
         mask = subsequent_mask(max_len).byte().to(latent_variable.device)
 
         trg = torch.tensor([SOS_INDEX] * batch_size, dtype=torch.long, device=latent_variable.device).unsqueeze(-1)
-        trg_embedding_memory = self.embedding(trg)
-        trg_embedding_memory = self.pe.efficient_forward(trg_embedding_memory, 0)
-        trg_embedding_memory = self.embedding_projection(trg_embedding_memory)
-        trg_embedding_memory = self.embedding_dropout(trg_embedding_memory)
+        trg_embedding_memory = self.embedding_dropout(self.embedding_projection(self.pe.efficient_forward(self.embedding(trg), 0)))
         x_memories = []
         x = trg_embedding_memory
-        for layer in self.layers:
-            x = layer(x, mask[:, 0:1, :])
 
-        logit = []
-        for i in range(max_len):
-            pass
+        for layer in self.layers:
+            x_memories.append(x)
+            x = layer(x, latent_variable, mask[:, 0:1, 0:1])
+        token_logit = self.generator(self.output_layer_norm(self.output_projection(self.layer_norm(x))))
+
+        logit = [token_logit]
+        for i in range(1, max_len):
+            token = token_logit.argmax(dim=-1)
+            x = self.embedding_dropout(self.embedding_projection(self.pe.efficient_forward(self.embedding(token), i)))
+            trg_embedding_memory = torch.cat((trg_embedding_memory, x), dim=1)
+            for j, layer in enumerate(self.layers):
+                x_memories[j] = torch.cat((x_memories[j], x), dim=1)
+                x = layer.efficient_forward(x_memories[j], latent_variable, mask[:, i:i + 1, :i + 1])
+            token_logit = self.generator(self.output_layer_norm(self.output_projection(self.layer_norm(x))))
+            logit.append(token_logit)
+        logit = torch.cat(logit, dim=1)
+        return logit

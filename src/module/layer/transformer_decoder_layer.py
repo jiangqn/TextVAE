@@ -2,6 +2,7 @@ import torch
 from torch import nn
 from src.module.attention.multi_head_attention import MultiHeadAttention
 from src.module.layer.position_wise_feed_forward import DecoderPositionWiseFeedForward
+from src.utils.has_nan import has_nan
 
 class TransformerDecoderLayer(nn.Module):
 
@@ -35,7 +36,7 @@ class TransformerDecoderLayer(nn.Module):
         o = self.feed_forward(h, latent_variable)
         return o
 
-    def efficient_forward(self, x: torch.Tensor, x_memory: torch.Tensor, latent_variable: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
+    def efficient_forward(self, x_memory: torch.Tensor, latent_variable: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
         """
         :param x: torch.FloatTensor (batch_size, 1, hidden_size)
         :param x_memory: torch.FloatTensor (batch_size, seq_len, hidden_size)
@@ -43,9 +44,10 @@ class TransformerDecoderLayer(nn.Module):
         :param mask: torch.ByteTensor (batch_size, 1, seq_len)
         :return : torch.FloatTensor (batch_size, 1, hidden_size)
         """
-        x_norm = self.layer_norm(x)
+        x = x_memory[:, -1:]
         x_memory_norm = self.layer_norm(x_memory)
-        h = self.trg_trg_attention(x_norm, x_memory_norm, x_memory_norm, mask)
+        x_norm = x_memory_norm[:, -1:]
+        h = self.trg_trg_attention(x_memory_norm, x_memory_norm, x_norm, mask)
         h = self.dropout(h) + x
         o = self.feed_forward(h, latent_variable)
         return o

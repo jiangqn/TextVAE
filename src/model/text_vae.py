@@ -21,6 +21,8 @@ class TextVAE(nn.Module):
         self.posterior_std_projection = nn.Linear(self.encoder_output_size, self.latent_size)
         if encoder_decoder_tying:
             self.encoder.embedding.weight = self.decoder.embedding.weight
+            if hasattr(encoder, "embedding_projection") and hasattr(decoder, "embedding_projection"):
+                self.encoder.embedding_projection.weight = self.decoder.embedding_projection.weight
 
     def load_pretrained_embeddings(self, **kwargs) -> None:
         assert ("path" in kwargs) ^ ("embedding" in kwargs)
@@ -146,7 +148,10 @@ class TextVAE(nn.Module):
         else:
             latent_variable = kwargs["latent_variable"]
         max_len = kwargs["max_len"]
-        logit = self.decoder.decode(latent_variable, max_len)
+
+        self.eval()
+        with torch.no_grad():
+            logit = self.decoder.efficient_decode(latent_variable, max_len)
         output = logit.argmax(dim=-1)
         return_list = [output]
         if kwargs.get("output_latent_variable", False):

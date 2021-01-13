@@ -40,6 +40,7 @@ class MultiHeadAttention(nn.Module):
         :param q: torch.FloatTensor (batch_size, seq_len, hidden_size)
         :param mask: torch.ByteTensor (batch_size, 1, seq_len)
         """
+
         batch_size = k.size(0)
         num_heads = self.num_heads
 
@@ -70,6 +71,7 @@ class MultiHeadAttention(nn.Module):
 
         # get context vector (select values with attention) and reshape
         # back to [B, M, D]
+
         context = torch.matmul(attention, v)
         context = context.transpose(1, 2).contiguous().view(
             batch_size, -1, num_heads * self.head_size)

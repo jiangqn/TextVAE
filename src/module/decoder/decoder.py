@@ -42,10 +42,14 @@ class Decoder(nn.Module):
         :return mask * trg: torch.LongTensor (batch_size, seq_len)
         """
 
-        pad_mask = (trg == PAD_INDEX) | (trg == SOS_INDEX) | (trg == EOS_INDEX)
+        pad_mask = (trg == PAD_INDEX)
+        sos_mask = (trg == SOS_INDEX)
+        eos_mask = (trg == EOS_INDEX)
         p = torch.FloatTensor(trg.size()).to(trg.device)
         constant_(p, 1 - self.word_dropout)
         mask = torch.bernoulli(p).long()
         masked_trg = mask * trg + (1 - mask) * UNK_INDEX
         masked_trg.masked_fill_(pad_mask, PAD_INDEX)
+        masked_trg.masked_fill_(sos_mask, SOS_INDEX)
+        masked_trg.masked_fill_(eos_mask, EOS_INDEX)
         return masked_trg
