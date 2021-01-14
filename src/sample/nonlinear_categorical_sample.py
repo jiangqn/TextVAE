@@ -12,7 +12,7 @@ from src.get_features.get_ppl import get_ppl_from_tsv
 from src.utils import metric
 from src.train.eval_reverse_ppl import eval_reverse_ppl
 
-def categorical_sample(config: dict) -> None:
+def nonlinear_categorical_sample(config: dict) -> None:
 
     base_path = config['base_path']
     vanilla_sample_num = config['vanilla_sample']['sample_num']

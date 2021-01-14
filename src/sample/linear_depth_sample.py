@@ -11,7 +11,7 @@ from src.utils import metric
 from src.get_features.get_ppl import get_ppl_from_tsv
 from src.train.eval_reverse_ppl import eval_reverse_ppl
 
-def depth_sample(config: dict) -> None:
+def linear_depth_sample(config: dict) -> None:
 
     os.environ['CUDA_VISIBLE_DEVICES'] = str(config['gpu'])
 
