@@ -7,30 +7,30 @@ from src.utils.convert_tensor_to_texts import convert_tensor_to_texts
 from src.get_features.get_ppl import get_ppl_from_tsv
 from src.constants import PAD_INDEX
 
-def sample_eval_by_language_model(model, base_path, sample_num=10000, batch_size=64, **kwargs):
+def sample_eval_by_language_model(model, base_path, sample_num=1000, batch_size=64, **kwargs):
 
-    vocab_path = os.path.join(base_path, 'vocab.pkl')
-    language_model_path = os.path.join(base_path, 'language_model.pkl')
-    sample_save_path = os.path.join(base_path, 'sample_eval.tsv')
+    vocab_path = os.path.join(base_path, "vocab.pkl")
+    language_model_path = os.path.join(base_path, "language_model.pkl")
+    sample_save_path = os.path.join(base_path, "sample_eval.tsv")
 
-    with open(vocab_path, 'rb') as handle:
+    with open(vocab_path, "rb") as handle:
         vocab = pickle.load(handle)
 
     batch_sizes = [batch_size] * (sample_num // batch_size) + [sample_num % batch_size]
 
-    sentences = ['sentence']
+    sentences = ["sentence"]
 
     for batch_size in batch_sizes:
-        output = model.sample(num=batch_size, max_len=kwargs['max_len'])
+        output = model.sample(num=batch_size, max_len=kwargs["max_len"])
         sentences.extend(convert_tensor_to_texts(output, vocab))
 
     sentences = [[sentence] for sentence in sentences]
 
-    with open(sample_save_path, 'w') as f:
-        writer = csv.writer(f, delimiter='\t')
+    with open(sample_save_path, "w") as f:
+        writer = csv.writer(f, delimiter="\t")
         writer.writerows(sentences)
 
-    language_model = kwargs.get('language_model', None)
+    language_model = kwargs.get("language_model", None)
     if language_model == None:
         ppls = get_ppl_from_tsv(file_path=sample_save_path, batch_size=batch_size, model_path=language_model_path, vocab=vocab)
     else:

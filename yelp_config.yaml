@@ -33,7 +33,7 @@ language_model:
     max_patience: 20
 text_vae:
   encoder:
-    encoder_type: "transformer_encoder"
+    encoder_type: "gru_encoder"
     bow_encoder:
       embed_size: 300
       dropout: 0.5
@@ -57,7 +57,7 @@ text_vae:
     lstm_encoder:
       embed_size: 300
       hidden_size: 600
-      num_layers: 2
+      num_layers: 1
       bidirectional: True
       dropout: 0.5
       output_type: "attention_pooling"
@@ -69,7 +69,7 @@ text_vae:
       num_heads: 4
       dropout: 0.5
   decoder:
-    decoder_type: "transformer_decoder"
+    decoder_type: "gru_decoder"
     gru_decoder:
       embed_size: 300
       hidden_size: 600
@@ -97,7 +97,7 @@ text_vae:
     skip_lstm_decoder:
       embed_size: 300
       hidden_size: 600
-      num_layers: 2
+      num_layers: 1
       dropout: 0.5
       word_dropout: 0.5
       decoder_generator_tying: True
@@ -120,7 +120,7 @@ text_vae:
       type: "linear"
       step: 10000
       offset: 5
-    lr: 0.0001
+    lr: 0.001
     weight_decay: 0
     epoches: 5
     eval_freq: 100

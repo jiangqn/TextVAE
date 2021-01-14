@@ -17,8 +17,8 @@ def length_analyze(config: dict) -> None:
         n_blocks=3
     )
 
-    # analyzer.fit()
-    analyzer.load_model()
+    analyzer.fit()
+    # analyzer.load_model()
 
     latent_variable, transformed_latent_variable, target = analyzer.get_data()
 

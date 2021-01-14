@@ -17,8 +17,8 @@ def depth_analyze(config: dict) -> None:
         n_blocks=3
     )
 
-    # analyzer.fit(num_epoches=20)
-    analyzer.load_model()
+    analyzer.fit(num_epoches=20)
+    # analyzer.load_model()
 
     latent_variable, transformed_latent_variable, target = analyzer.get_data()
 

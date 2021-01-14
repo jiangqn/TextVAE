@@ -141,17 +141,22 @@ class TextVAE(nn.Module):
         assert "max_len" in kwargs
         if "num" in kwargs:
             device = self.encoder.embedding.weight.device
-            # U = torch.randn(size=(kwargs["num"], self.latent_size), device=device)
-            # V = U.matmul(self.aggregated_posterior_weight) + self.aggregated_posterior_mean
-            # latent_variable = (1 - lambd) * U + lambd * V
             latent_variable = torch.randn(size=(kwargs["num"], self.latent_size), device=device)
+
+            if hasattr(self, "posterior_mean") and hasattr(self, "posterior_std") and hasattr(self, "aggregated_posterior_ratio"):
+                prior_mean = torch.zeros(latent_variable.size(), dtype=torch.float, device=device)
+                prior_std = torch.ones(latent_variable.size(), dtype=torch.float, device=device)
+                mean = (1 - self.aggregated_posterior_ratio) * prior_mean + self.aggregated_posterior_ratio * self.posterior_mean
+                std = (1 - self.aggregated_posterior_ratio) * prior_std + self.aggregated_posterior_ratio * self.posterior_std
+                latent_variable = latent_variable * std + mean
+
         else:
             latent_variable = kwargs["latent_variable"]
         max_len = kwargs["max_len"]
 
         self.eval()
         with torch.no_grad():
-            logit = self.decoder.efficient_decode(latent_variable, max_len)
+            logit = self.decoder.decode(latent_variable, max_len)
         output = logit.argmax(dim=-1)
         return_list = [output]
         if kwargs.get("output_latent_variable", False):
