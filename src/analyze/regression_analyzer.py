@@ -4,7 +4,7 @@ from torch import optim
 from torch.utils.data.dataloader import DataLoader
 from src.analyze.iresnet import InvertibleResNet
 from src.analyze.dataset import RegressionDataset
-from src.analyze.multiple_correlation import multiple_correlation
+from src.analyze.multiple_correlation import multiple_correlation, get_linear_weights
 import os
 from typing import Tuple
 
@@ -17,6 +17,8 @@ class RegressionAnalyzer(object):
         self.model = InvertibleResNet(hidden_size=hidden_size, n_blocks=n_blocks, output_size=1)
         self.model = self.model.cuda()
         self.save_path = os.path.join(base_path, "%s_iresnet.pkl" % target_name)
+        self.latent_linear_weights_path = os.path.join(self.base_path, "%s_latent_linear_weights.pkl" % target_name)
+        self.transformed_latent_linear_weights_path = os.path.join(self.base_path, "%s_transformed_latent_linear_weights.pkl" % target_name)
 
     def load_model(self):
         self.model = torch.load(self.save_path)
@@ -92,6 +94,8 @@ class RegressionAnalyzer(object):
                         torch.save(self.model, self.save_path)
         _, test_correlation, test_transformed_correlation = self.eval(test_loader)
         print("test_correlation: %.4f\ttest_transformed_correlation: %.4f" % (test_correlation, test_transformed_correlation))
+
+        self.save_linear_weights()
 
     def eval(self, data_loader: DataLoader) -> Tuple[float, float, float]:
 
@@ -170,3 +174,13 @@ class RegressionAnalyzer(object):
         target = target.squeeze(-1)
 
         return latent_variable, transformed_latent_variable, target
+
+    def save_linear_weights(self):
+
+        latent_variable, transformed_latent_variable, target = self.get_data()
+
+        latent_linear_weights = get_linear_weights(latent_variable, target)
+        transformed_latent_linear_weights = get_linear_weights(transformed_latent_variable, target)
+
+        torch.save(latent_linear_weights, self.latent_linear_weights_path)
+        torch.save(transformed_latent_linear_weights, self.transformed_latent_linear_weights_path)

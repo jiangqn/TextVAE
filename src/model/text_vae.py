@@ -140,16 +140,7 @@ class TextVAE(nn.Module):
         assert ("num" in kwargs) ^ ("latent_variable" in kwargs)
         assert "max_len" in kwargs
         if "num" in kwargs:
-            device = self.encoder.embedding.weight.device
-            latent_variable = torch.randn(size=(kwargs["num"], self.latent_size), device=device)
-
-            if hasattr(self, "posterior_mean") and hasattr(self, "posterior_std") and hasattr(self, "aggregated_posterior_ratio"):
-                prior_mean = torch.zeros(latent_variable.size(), dtype=torch.float, device=device)
-                prior_std = torch.ones(latent_variable.size(), dtype=torch.float, device=device)
-                mean = (1 - self.aggregated_posterior_ratio) * prior_mean + self.aggregated_posterior_ratio * self.posterior_mean
-                std = (1 - self.aggregated_posterior_ratio) * prior_std + self.aggregated_posterior_ratio * self.posterior_std
-                latent_variable = latent_variable * std + mean
-
+            latent_variable = self.sample_latent_variable(kwargs["num"])
         else:
             latent_variable = kwargs["latent_variable"]
         max_len = kwargs["max_len"]
@@ -165,3 +156,19 @@ class TextVAE(nn.Module):
         if kwargs.get("output_logit", False):
             return_list.append(logit)
         return return_list[0] if len(return_list) == 1 else return_list
+
+    def sample_latent_variable(self, num: int) -> torch.Tensor:
+        """
+        :param num: int
+        """
+        device = self.encoder.embedding.weight.device
+        latent_variable = torch.randn(size=(num, self.latent_size), device=device)
+
+        if hasattr(self, "posterior_mean") and hasattr(self, "posterior_std") and hasattr(self, "aggregated_posterior_ratio"):
+            prior_mean = torch.zeros(latent_variable.size(), dtype=torch.float, device=device)
+            prior_std = torch.ones(latent_variable.size(), dtype=torch.float, device=device)
+            mean = (1 - self.aggregated_posterior_ratio) * prior_mean + self.aggregated_posterior_ratio * self.posterior_mean
+            std = (1 - self.aggregated_posterior_ratio) * prior_std + self.aggregated_posterior_ratio * self.posterior_std
+            latent_variable = latent_variable * std + mean
+
+        return latent_variable

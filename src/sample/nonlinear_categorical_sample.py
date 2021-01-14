@@ -6,7 +6,7 @@ import joblib
 import csv
 from src.utils.multinomial_distribution import get_multinomial_distribution_from_tsv
 from src.utils.rejection_sample import multinomial_rejection_sample
-from src.utils.sample_from_encoding import sample_from_encoding
+from src.utils.sample_from_encoding import sample_sentences_from_latent_variable
 from src.get_features.get_category import get_categorical_features_from_tsv
 from src.get_features.get_ppl import get_ppl_from_tsv
 from src.utils import metric
@@ -45,7 +45,7 @@ def nonlinear_categorical_sample(config: dict) -> None:
     device = model.encoder.embedding.weight.device
     encoding = encoding.to(device)
 
-    sentences = ['sentence'] + sample_from_encoding(model, vocab, encoding, config['max_len'], config['vae']['batch_size'])
+    sentences = ['sentence'] + sample_sentences_from_latent_variable(model, vocab, encoding, config['max_len'], config['vae']['batch_size'])
 
     sentences = [[sentence] for sentence in sentences]
     if save_encoding:

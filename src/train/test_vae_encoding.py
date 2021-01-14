@@ -6,7 +6,7 @@ import pickle
 from nltk.translate.bleu_score import sentence_bleu, corpus_bleu
 from src.constants import SOS, EOS, PAD_INDEX
 from src.utils.sentence_encoding import sentence_encoding_from_iterator
-from src.utils.sample_from_encoding import sample_from_encoding
+from src.utils.sample_from_encoding import sample_sentences_from_latent_variable
 from src.utils.tsv_reader import read_field
 
 def test_vae_encoding(config: dict) -> None:
@@ -31,7 +31,7 @@ def test_vae_encoding(config: dict) -> None:
     model = torch.load(save_path)
 
     test_encoding = sentence_encoding_from_iterator(model, test_iter, encoding_type='gradient')
-    reconstructed_sentences = sample_from_encoding(model, vocab, test_encoding, config['max_len'], config['vae']['batch_size'])
+    reconstructed_sentences = sample_sentences_from_latent_variable(model, vocab, test_encoding, config['max_len'], config['vae']['batch_size'])
 
     original_sentences = read_field(test_path, 'sentence')
 
