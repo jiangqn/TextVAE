@@ -24,6 +24,7 @@ def get_linear_weights(X: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
     """
     :param X: torch.FloatTensor (num, dim)
     :param y: torch.FloatTensor (num,)
+    :return : torch.FloatTensor (dim + 1,)
     """
     assert len(X.size()) == 2
     assert len(y.size()) == 1
@@ -33,5 +34,5 @@ def get_linear_weights(X: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
     X = torch.cat((X, ones), dim=1)
     Y = y.unsqueeze(-1)
     W = torch.inverse(X.t().matmul(X)).matmul(X.t()).matmul(Y)  # torch.FloatTensor (dim + 1, 1)
-    w = W[:-1, 0]
+    w = W[:, 0]
     return w
