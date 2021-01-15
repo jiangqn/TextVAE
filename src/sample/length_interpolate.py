@@ -2,10 +2,7 @@ import os
 import torch
 import pickle
 import csv
-from src.utils.tsv_reader import read_field
-from src.utils.multinomial_distribution import get_multinomial_distribution, sample_from_multinomial_distribution
-from src.utils.encoding_transform import move_encoding
-from src.utils.sample_from_encoding import sample_sentences_from_latent_variable
+from src.sample.sample_from_encoding import sample_sentences_from_latent_variable
 from src.utils.encoding_transform import interpolate
 
 def length_interpolate(config: dict) -> None:

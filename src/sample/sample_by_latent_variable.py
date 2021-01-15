@@ -4,7 +4,7 @@ from torchtext.vocab import Vocab
 from typing import List
 from src.utils.convert_tensor_to_texts import convert_tensor_to_texts
 
-def sample_sentences_from_latent_variable(model: nn.Module, vocab: Vocab, latent_variable: torch.Tensor, max_len: int, batch_size: int = 64) -> List[str]:
+def sample_by_latent_variable(model: nn.Module, vocab: Vocab, latent_variable: torch.Tensor, max_len: int, batch_size: int = 64) -> List[str]:
     """
     :param model: vae nn.Module
     :param vocab: Vocab

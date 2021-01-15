@@ -69,9 +69,9 @@ class TextVAE(nn.Module):
         :return latent_variable: torch.FloatTensor (batch_size, latent_size)
         """
 
-        lr = kwargs.get('lr', 0.3)
-        weight_deacy = kwargs.get('weight_decay', 0)
-        max_iter = kwargs.get('max_iter', 100)
+        lr = kwargs.get("lr", 0.3)
+        weight_deacy = kwargs.get("weight_decay", 0)
+        max_iter = kwargs.get("max_iter", 100)
 
         src = sentence[:, 1:]
         trg_input = sentence

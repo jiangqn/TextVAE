@@ -7,6 +7,7 @@ from src.utils.convert_tensor_to_texts import convert_tensor_to_texts
 from src.get_features.get_ppl import get_ppl_from_tsv
 from src.utils import metric
 from src.train.eval_reverse_ppl import eval_reverse_ppl
+from src.sample.sample_by_num import sample_by_num
 
 def vanilla_sample(config: dict) -> None:
 
@@ -39,23 +40,15 @@ def vanilla_sample(config: dict) -> None:
     for division in ["train", "dev", "test"]:
 
         sample_num = sample_dict["num"][division]
-        batch_sizes = [batch_size] * (sample_num // batch_size) + ([sample_num % batch_size] if sample_num % batch_size != 0 else [])
+        sentences, latent_variables = sample_by_num(model, vocab, sample_num, max_len=config["max_len"], batch_size=batch_size)
 
-        sentences = ["sentence"]
-        latent_variables = []
-
-        for batch_size in batch_sizes:
-            output, output_latent_variable = model.sample(num=batch_size, max_len=config["max_len"], output_latent_variable=True)
-            sentences.extend(convert_tensor_to_texts(output, vocab))
-            latent_variables.append(output_latent_variable)
-
+        sentences = ["sentence"] + sentences
         sentences = [[sentence] for sentence in sentences]
 
         with open(sample_dict["sample_path"][division], "w") as f:
             writer = csv.writer(f, delimiter="\t")
             writer.writerows(sentences)
 
-        latent_variables = np.concatenate(latent_variables, axis=0)
         np.save(sample_dict["latent_variable_path"][division], latent_variables)
 
         if division == "test":

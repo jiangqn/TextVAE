@@ -5,7 +5,7 @@ import csv
 from src.utils.tsv_reader import read_field
 from src.utils.multinomial_distribution import get_multinomial_distribution, sample_from_multinomial_distribution
 from src.utils.encoding_transform import move_encoding
-from src.utils.sample_from_encoding import sample_sentences_from_latent_variable
+from src.sample.sample_from_encoding import sample_sentences_from_latent_variable
 from src.get_features.get_depth import get_depth
 from src.utils import metric
 from src.get_features.get_ppl import get_ppl_from_tsv

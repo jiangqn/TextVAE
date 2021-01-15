@@ -5,12 +5,11 @@ import csv
 from src.utils.tsv_reader import read_field
 from src.utils.multinomial_distribution import get_multinomial_distribution, sample_from_multinomial_distribution
 from src.analyze.latent_variable_transform import minimal_norm_solve, transform, inverse_transform
-from src.utils.sample_from_encoding import sample_sentences_from_latent_variable
+from src.sample.sample_from_encoding import sample_sentences_from_latent_variable
 from src.get_features.get_length import get_length
 from src.utils import metric
 from src.get_features.get_ppl import get_ppl_from_tsv
-from src.train.eval_reverse_ppl import eval_reverse_ppl
-from src.analyze.regression_analyzer import RegressionAnalyzer
+
 
 def nonlinear_length_sample(config: dict) -> None:
 

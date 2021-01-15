@@ -3,10 +3,10 @@ from torchtext import data
 from torchtext.data import TabularDataset, Iterator
 import os
 import pickle
-from nltk.translate.bleu_score import sentence_bleu, corpus_bleu
-from src.constants import SOS, EOS, PAD_INDEX
+from nltk.translate.bleu_score import corpus_bleu
+from src.constants import SOS, EOS
 from src.utils.sentence_encoding import sentence_encoding_from_iterator
-from src.utils.sample_from_encoding import sample_sentences_from_latent_variable
+from src.sample.sample_from_encoding import sample_sentences_from_latent_variable
 from src.utils.tsv_reader import read_field
 
 def test_vae_encoding(config: dict) -> None:
