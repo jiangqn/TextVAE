@@ -7,6 +7,7 @@ from src.analyze.dataset import RegressionDataset
 from src.analyze.multiple_correlation import multiple_correlation, get_linear_weights
 import os
 from typing import Tuple
+from copy import deepcopy
 
 class RegressionAnalyzer(object):
 
@@ -16,12 +17,6 @@ class RegressionAnalyzer(object):
         self.target_name = target_name
         self.model = InvertibleResNet(hidden_size=hidden_size, n_blocks=n_blocks, output_size=1)
         self.model = self.model.cuda()
-        self.save_path = os.path.join(base_path, "%s_iresnet.pkl" % target_name)
-        self.latent_linear_weights_path = os.path.join(self.base_path, "%s_latent_linear_weights.pkl" % target_name)
-        self.transformed_latent_linear_weights_path = os.path.join(self.base_path, "%s_transformed_latent_linear_weights.pkl" % target_name)
-
-    def load_model(self):
-        self.model = torch.load(self.save_path)
 
     def fit(self, batch_size: int = 100, lr: float = 3e-4, momentum: float = 0.8, weight_decay: float = 3e-4, num_epoches: int = 10) -> None:
         train_dataset = RegressionDataset(
@@ -60,6 +55,7 @@ class RegressionAnalyzer(object):
         self.criterion = nn.MSELoss()
         optimizer = optim.SGD(self.model.parameters(), lr=lr, momentum=momentum, weight_decay=weight_decay)
         min_dev_loss = None
+        best_model = None
         for epoch in range(num_epoches):
 
             total_samples = 0
@@ -91,7 +87,9 @@ class RegressionAnalyzer(object):
                           (epoch, i, train_loss, dev_loss, dev_correlation, dev_transformed_correlation))
                     if min_dev_loss == None or dev_loss < min_dev_loss:
                         min_dev_loss = dev_loss
-                        torch.save(self.model, self.save_path)
+                        best_model = deepcopy(self.model)
+
+        self.model = best_model
         _, test_correlation, test_transformed_correlation = self.eval(test_loader)
         print("test_correlation: %.4f\ttest_transformed_correlation: %.4f" % (test_correlation, test_transformed_correlation))
 
@@ -175,12 +173,66 @@ class RegressionAnalyzer(object):
 
         return latent_variable, transformed_latent_variable, target
 
-    def save_linear_weights(self):
+    def save_linear_weights(self) -> None:
 
         latent_variable, transformed_latent_variable, target = self.get_data()
 
         latent_linear_weights = get_linear_weights(latent_variable, target)
-        transformed_latent_linear_weights = get_linear_weights(transformed_latent_variable, target)
+        latent_weight = latent_linear_weights[0:-1]
+        latent_weight = latent_weight / latent_weight.norm()
+        self.latent_weight = latent_weight
+        self.latent_projection_dict = self.get_projection_dict(latent_variable, latent_weight, target)
 
-        torch.save(latent_linear_weights, self.latent_linear_weights_path)
-        torch.save(transformed_latent_linear_weights, self.transformed_latent_linear_weights_path)
+        transformed_latent_linear_weights = get_linear_weights(transformed_latent_variable, target)
+        transformed_latent_weight = transformed_latent_linear_weights[0:-1]
+        transformed_latent_weight = transformed_latent_weight / transformed_latent_weight.norm()
+        self.transformed_latent_weight = transformed_latent_weight
+        self.transformed_latent_projection_dict = self.get_projection_dict(transformed_latent_variable, transformed_latent_weight, target)
+
+    def get_projection_dict(self, latent_variable: torch.Tensor, weight: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+
+        """
+        :param latent_variable: torch.FloatTensor (num, latent_size)
+        :param weight: torch.FloatTensor (latent_size,)
+        :param target: torch.FloatTensor (num,)
+        :return projection_dict: torch.FloatTensor (max_value + 1,)
+        """
+
+        weight = weight / weight.norm()
+        projection = latent_variable.matmul(weight)
+
+        min_value = int(target.min().item() + 1e-6)
+        max_value = int(target.max().item() + 1e-6)
+        projection_dict = torch.zeros(max_value + 1, dtype=torch.float, device=latent_variable.device)
+        for i in range(min_value, max_value + 1):
+            projection_dict[i] = projection[target == i].mean()
+
+        return projection_dict
+
+    def latent_variable_transform(self, latent_variable: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+
+        """
+        :param latent_variable: torch.FloatTensor (num, latent_size)
+        :param target: torch.LongTensor (num,)
+        :return : torch.FloatTensor (num, latent_size)
+        """
+
+        weight = self.latent_weight.unsqueeze(-1)
+        current_projection = latent_variable.matmul(weight)
+        target_projection = self.latent_projection_dict[target].unsqueeze(-1)
+        latent_variable = latent_variable + (target_projection - current_projection).matmul(weight.transpose(0, 1))
+        return latent_variable
+
+    def transformed_latent_variable_transform(self, latent_variable: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+
+        """
+        :param latent_variable: torch.FloatTensor (num, latent_size)
+        :param target: torch.LongTensor (num,)
+        :return : torch.FloatTensor (num, latent_size)
+        """
+
+        weight = self.transformed_latent_weight.unsqueeze(-1)
+        current_projection = latent_variable.matmul(weight)
+        target_projection = self.latent_projection_dict[target].unsqueeze(-1)
+        latent_variable = latent_variable + (target_projection - current_projection).matmul(weight.transpose(0, 1))
+        return latent_variable

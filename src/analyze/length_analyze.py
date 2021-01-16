@@ -2,6 +2,7 @@ import os
 from src.analyze.regression_analyzer import RegressionAnalyzer
 import matplotlib.pyplot as plt
 from hyperanalysis.visualization.lra import linear_regression_analysis
+import pickle
 
 def length_analyze(config: dict) -> None:
 
@@ -18,13 +19,19 @@ def length_analyze(config: dict) -> None:
     )
 
     analyzer.fit()
-    # analyzer.load_model()
+    analyzer_path = os.path.join(base_path, "length_analyzer.pkl")
+    with open(analyzer_path, "wb") as f:
+        pickle.dump(analyzer, f)
 
     latent_variable, transformed_latent_variable, target = analyzer.get_data()
 
     projected_latent_variable = linear_regression_analysis(latent_variable, target).cpu().numpy()
     projected_transformed_latent_variable = linear_regression_analysis(transformed_latent_variable, target).cpu().numpy()
     target = target.cpu().numpy()
+
+    min_value = int(target.min())
+    max_value = int(target.max())
+    bins = max_value - min_value + 1
 
     plt.figure(figsize=(16, 13))
 
@@ -40,14 +47,14 @@ def length_analyze(config: dict) -> None:
     plt.title("transformed latent space")
 
     plt.subplot(2, 2, 3)
-    plt.hist(projected_latent_variable[:, 0], bins=50)
+    plt.hist(projected_latent_variable[:, 0], bins=bins)
     plt.title("histogram")
     plt.xlabel("length main direction")
     plt.ylabel("frequency")
     plt.legend()
 
     plt.subplot(2, 2, 4)
-    plt.hist(projected_transformed_latent_variable[:, 0], bins=50)
+    plt.hist(projected_transformed_latent_variable[:, 0], bins=bins)
     plt.title("transformed histogram")
     plt.xlabel("length main direction")
     plt.ylabel("frequency")
@@ -59,7 +66,7 @@ def length_analyze(config: dict) -> None:
     plt.clf()
 
     plt.figure(figsize=(8, 5))
-    plt.hist(target, bins=50)
+    plt.hist(target, bins=bins)
     plt.title("length histogram")
     plt.xlabel("length")
     plt.ylabel("frequency")

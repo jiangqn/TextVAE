@@ -1,7 +1,7 @@
 seed: 42
 base_path: data/yelp
 glove_source_path: /home/jiangqn/datasets/embeddings/glove.840B.300d.txt
-max_len: 40
+max_len: 50
 features: ["label", "length", "depth"]
 text_cnn:
   model:

@@ -5,17 +5,21 @@ from src.utils.set_seed import set_seed
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--model", type=str, default="text_vae", choices=["text_vae", "text_cnn", "lm"])
-parser.add_argument("--task", type=str, default="train", choices=["preprocess", "train", "test", "vanilla_sample", "get_features", "correlation",
-        "length_analyze", "depth_analyze", "category_analyze",
-        "visualize", "pca_visualize", "tsne_visualize", "linear_separate", "categorical_sample", "compute_projection_statistics", "sentiment_sample", "length_sample", "depth_sample",
-        "test_vae_encoding", "sentiment_transfer", "eval_reverse_ppl", "measure_disentanglement", "length_interpolate", "compute_aggregated_posterior"])
+parser.add_argument("--task", type=str, default="train", choices=["preprocess", "train", "test", "vanilla_sample", "get_features",
+        "length_analyze", "depth_analyze", "category_analyze", "linear_length_sample", "linear_depth_sample", "linear_categorical_sample",
+        "nonlinear_length_sample", "nonlinear_depth_sample", "nonlinear_categorical_sample", "test_linear_length_sample",
+        "eval_reverse_ppl", "measure_disentanglement", "length_interpolate", "compute_aggregated_posterior",
+        "register_aggregated_posterior", "remove_aggregated_posterior"])
 parser.add_argument("--gpu", type=int, default=0, choices=[i for i in range(8)])
 parser.add_argument("--config", type=str, default="yelp_config.yaml")
+parser.add_argument("--aggregated_posterior_ratio", type=float, default=None)
 
 args = parser.parse_args()
 
 config = yaml.safe_load(open(args.config, "r", encoding="utf-8"))
 config["gpu"] = args.gpu
+if args.aggregated_posterior_ratio != None:
+    config["sample"]["aggregated_posterior_ratio"] = args.aggregated_posterior_ratio
 
 set_seed(config["seed"])
 
@@ -44,49 +48,43 @@ elif args.model == "text_vae":
     elif args.task == "category_analyze":
         from src.analyze.category_analyze import category_analyze
         category_analyze(config)
-    elif args.task == "correlation":
-        from src.utils.correlation import correlation
-        correlation(config)
-    elif args.task == "visualize":
-        from src.utils.visualize import visualize
-        visualize(config)
-    elif args.task == "pca_visualize":
-        from src.utils.vanilla_visualize import vanilla_visualize
-        vanilla_visualize(config, "pca")
-    elif args.task == "tsne_visualize":
-        from src.utils.vanilla_visualize import vanilla_visualize
-        vanilla_visualize(config, "tsne")
-    elif args.task == "linear_separate":
-        from src.utils.linear_separate import linear_separate
-        linear_separate(config)
-    elif args.task == "categorical_sample":
-        from src.sample.categorical_sample import categorical_sample
-        categorical_sample(config)
-    elif args.task == "compute_projection_statistics":
-        from src.utils.compute_projection_statistics import compute_projection_statistics
-        compute_projection_statistics(config)
-    elif args.task == "length_sample":
-        from src.sample.length_sample import length_sample
-        length_sample(config)
-    elif args.task == "depth_sample":
-        from src.sample.depth_sample import depth_sample
-        depth_sample(config)
-    elif args.task == "test_vae_encoding":
-        from src.train.test_vae_encoding import test_vae_encoding
-        test_vae_encoding(config)
+    elif args.task == "linear_length_sample":
+        from src.sample.linear_length_sample import linear_length_sample
+        linear_length_sample(config)
+    elif args.task == "linear_depth_sample":
+        from src.sample.linear_depth_sample import linear_depth_sample
+        linear_depth_sample(config)
+    elif args.task == "linear_categorical_sample":
+        from src.sample.linear_categorical_sample import linear_categorical_sample
+        linear_categorical_sample(config)
+    elif args.task == "nonlinear_length_sample":
+        from src.sample.nonlinear_length_sample import nonlinear_length_sample
+        nonlinear_length_sample(config)
+    elif args.task == "nonlinear_depth_sample":
+        from src.sample.nonlinear_depth_sample import nonlinear_depth_sample
+        nonlinear_depth_sample(config)
+    elif args.task == "nonlinear_categorical_sample":
+        from src.sample.nonlinear_categorical_sample import nonlinear_categorical_sample
+        nonlinear_categorical_sample(config)
     elif args.task == "eval_reverse_ppl":
         from src.train.eval_reverse_ppl import eval_reverse_ppl
         path = os.path.join(config["base_path"], "vanilla_sample_100000.tsv")
         eval_reverse_ppl(config)
-    elif args.task == "measure_disentanglement":
-        from src.utils.measure_disentanglement import measure_disentanglement
-        measure_disentanglement(config)
     elif args.task == "length_interpolate":
         from src.sample.length_interpolate import length_interpolate
         length_interpolate(config)
     elif args.task == "compute_aggregated_posterior":
         from src.sample.compute_aggregated_posterior import compute_aggregated_posterior
         compute_aggregated_posterior(config)
+    elif args.task == "register_aggregated_posterior":
+        from src.sample.register_aggregated_posterior import register_aggregated_posterior
+        register_aggregated_posterior(config)
+    elif args.task == "remove_aggregated_posterior":
+        from src.sample.remove_aggregated_posterior import remove_aggregated_posterior
+        remove_aggregated_posterior(config)
+    elif args.task == "test_linear_length_sample":
+        from src.sample.test_linear_length_sample import test_linear_length_sample
+        test_linear_length_sample(config)
 elif args.model == "lm":
     if args.task == "train":
         from src.train.train_language_model import train_language_model

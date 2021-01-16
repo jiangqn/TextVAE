@@ -9,6 +9,7 @@ from src.sample.sample_by_latent_variable import sample_by_latent_variable
 from src.get_features.get_length import get_length
 from src.utils import metric
 from src.get_features.get_ppl import get_ppl_from_tsv
+from src.train.eval_reverse_ppl import eval_reverse_ppl
 
 
 def linear_length_sample(config: dict) -> None:
@@ -25,33 +26,24 @@ def linear_length_sample(config: dict) -> None:
     sample_save_path = os.path.join(base_path, "length_sample.tsv")
     target_length = sample_from_multinomial_distribution(length_distribution, sample_num)
 
-    print(target_length[0:100])
-
     vocab_path = os.path.join(base_path, "vocab.pkl")
     with open(vocab_path, "rb") as handle:
         vocab = pickle.load(handle)
 
     model_path = os.path.join(base_path, "text_vae.pkl")
     language_model_path = os.path.join(base_path, "language_model.pkl")
-    latent_linear_weights_path = os.path.join(base_path, "length_latent_linear_weights.pkl")
+    analyzer_path = os.path.join(base_path, "length_analyzer.pkl")
 
     model = torch.load(model_path)
     device = model.encoder.embedding.weight.device
-    weights = torch.load(latent_linear_weights_path)
-    weight = weights[0:-1]
-    bias = weights[-1]
+    with open(analyzer_path, "rb") as f:
+        analyzer = pickle.load(f)
 
     latent_variable = model.sample_latent_variable(sample_num)
-    latent_variable = minimal_norm_solve(latent_variable, torch.FloatTensor(target_length).to(device), weight, bias)
+    latent_variable = analyzer.latent_variable_transform(latent_variable, torch.LongTensor(target_length).to(device))
 
-    prediction = latent_variable.matmul(weight) + bias
-    print(prediction.tolist()[0:100])
-
-    sentences = sample_sentences_from_latent_variable(model, vocab, latent_variable, config["max_len"], config["text_vae"]["training"]["batch_size"])
+    sentences = sample_by_latent_variable(model, vocab, latent_variable, config["max_len"], config["text_vae"]["training"]["batch_size"])
     length = get_length(sentences)
-
-    print(target_length[0:100])
-    print(length[0:100])
 
     sentences = ["sentence"] + sentences
     sentences = [[sentence] for sentence in sentences]
@@ -68,6 +60,6 @@ def linear_length_sample(config: dict) -> None:
     print("correlation: %.4f" % metric.correlation(length, target_length))
     print("ppl: %.4f" % metric.mean(ppl))
 
-    # reverse_ppl = eval_reverse_ppl(config, sample_save_path)
+    reverse_ppl = eval_reverse_ppl(config, sample_save_path)
 
-    # print("length sample reverse ppl: %.4f" % reverse_ppl)
+    print("length sample reverse ppl: %.4f" % reverse_ppl)
