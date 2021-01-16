@@ -1,7 +1,8 @@
 seed: 42
 base_path: data/amazon
 glove_source_path: /home/jiangqn/datasets/embeddings/glove.840B.300d.txt
-max_len: 15
+max_len: 50
+features: ["label", "length", "depth"]
 text_cnn:
   model:
     embed_size: 300
@@ -14,7 +15,7 @@ text_cnn:
     weight_decay: 0
     epoches: 5
     eval_freq: 100
-    max_patience: 20
+    max_patience: 3
 language_model:
   model:
     embed_size: 300
@@ -32,7 +33,7 @@ language_model:
     max_patience: 20
 text_vae:
   encoder:
-    encoder_type: "lstm_encoder"
+    encoder_type: "gru_encoder"
     bow_encoder:
       embed_size: 300
       dropout: 0.5
@@ -61,7 +62,7 @@ text_vae:
       dropout: 0.5
       output_type: "attention_pooling"
   decoder:
-    decoder_type: "skip_lstm_decoder"
+    decoder_type: "gru_decoder"
     gru_decoder:
       embed_size: 300
       hidden_size: 600
@@ -94,7 +95,7 @@ text_vae:
       word_dropout: 0.5
       decoder_generator_tying: True
       initial_hidden_type: "zero"
-  latent_size: 300
+  latent_size: 100
   encoder_decoder_tying: True
   training:
     batch_size: 64
@@ -104,20 +105,22 @@ text_vae:
       step: 10000
       offset: 5
     lr: 0.001
-    weight_decay: 0.0001
-    epoches: 10
+    weight_decay: 0
+    epoches: 5
     eval_freq: 100
     clip_grad_norm: 5.0
     anneal_step: 3000
-vanilla_sample:
-  sample_num: 100000
-  save_encoding: True
-categorical_sample:
-  sample_num: 100000
-  save_encoding: False
-length_sample:
-  sample_num: 100000
-  save_encoding: False
-depth_sample:
-  sample_num: 100000
-  save_encoding: False
+sample:
+  vanilla_sample:
+    train_sample_num: 100000
+    dev_sample_num: 20000
+    test_sample_num: 100000
+  categorical_sample:
+    sample_num: 100000
+    save_encoding: False
+  length_sample:
+    sample_num: 100000
+    save_encoding: False
+  depth_sample:
+    sample_num: 100000
+    save_encoding: False
