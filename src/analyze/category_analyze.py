@@ -2,7 +2,6 @@ import os
 from src.analyze.classification_analyzer import ClassificationAnalyzer
 import matplotlib.pyplot as plt
 from hyperanalysis.visualization.lda import linear_discriminant_analysis
-from hyperanalysis.visualization.lra import linear_regression_analysis
 
 def category_analyze(config: dict) -> None:
 

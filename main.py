@@ -7,7 +7,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--model", type=str, default="text_vae", choices=["text_vae", "text_cnn", "lm"])
 parser.add_argument("--task", type=str, default="train", choices=["preprocess", "train", "test", "vanilla_sample", "get_features",
         "length_analyze", "depth_analyze", "category_analyze", "linear_length_sample", "linear_depth_sample", "linear_categorical_sample",
-        "nonlinear_length_sample", "nonlinear_depth_sample", "nonlinear_categorical_sample", "test_linear_length_sample",
+        "nonlinear_length_sample", "nonlinear_depth_sample", "nonlinear_categorical_sample",
         "eval_reverse_ppl", "measure_disentanglement", "length_interpolate", "compute_aggregated_posterior",
         "register_aggregated_posterior", "remove_aggregated_posterior"])
 parser.add_argument("--gpu", type=int, default=0, choices=[i for i in range(8)])
@@ -82,9 +82,6 @@ elif args.model == "text_vae":
     elif args.task == "remove_aggregated_posterior":
         from src.sample.remove_aggregated_posterior import remove_aggregated_posterior
         remove_aggregated_posterior(config)
-    elif args.task == "test_linear_length_sample":
-        from src.sample.test_linear_length_sample import test_linear_length_sample
-        test_linear_length_sample(config)
 elif args.model == "lm":
     if args.task == "train":
         from src.train.train_language_model import train_language_model
