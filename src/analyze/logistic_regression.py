@@ -25,17 +25,5 @@ class LogisticRegression(nn.Module):
         """
         logit = self.linear(latent_variable)
         prob = torch.softmax(logit, dim=-1)
-        prob = torch.gather(prob, 1, target)
+        prob = torch.gather(prob, 1, target.unsqueeze(-1)).squeeze(-1)
         return prob
-
-class LogisticRegressionClassifier(object):
-
-    def __init__(self) -> None:
-        super(LogisticRegressionClassifier, self).__init__()
-
-    def fit(self, latent_variable: torch.Tensor, target: torch.Tensor) -> None:
-        """
-        :param latent_variable: torch.FloatTensor (num, latent_size)
-        :param target: torch.LongTensor (num,)
-        """
-        pass
