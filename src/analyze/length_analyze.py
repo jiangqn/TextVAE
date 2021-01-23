@@ -18,6 +18,8 @@ def length_analyze(config: dict) -> None:
         latent_size=latent_size
     )
 
+    fontsize = 18
+
     analyzer.fit()
     analyzer_path = os.path.join(base_path, "length_analyzer.pkl")
     with open(analyzer_path, "wb") as f:
@@ -35,8 +37,11 @@ def length_analyze(config: dict) -> None:
     plt.figure(figsize=(10, 7))
 
     plt.scatter(projected_latent_variable[:, 0], projected_latent_variable[:, 1], c=target, s=0.1, cmap="viridis")
-    plt.colorbar()
-    plt.title("latent space")
+    colorbar = plt.colorbar()
+    colorbar.ax.tick_params(labelsize=fontsize)
+    plt.xticks(fontsize=fontsize)
+    plt.yticks(fontsize=fontsize)
+    plt.title("length", fontsize=fontsize + 4)
 
     length_visualization_save_path = os.path.join(base_path, "length_visualization.png")
     plt.savefig(length_visualization_save_path, bbox_inches="tight", pad_inches=0.1)
@@ -50,8 +55,9 @@ def length_analyze(config: dict) -> None:
     plt.scatter(target, projection, c=target, s=0.1)
     plt.plot(xtarget, analyzer.latent_projection_dict[min_value:].cpu().numpy())
 
-    plt.xlabel("length")
-    plt.ylabel("projection")
+    plt.xlabel("length", fontsize=fontsize)
+    plt.ylabel("projection", fontsize=fontsize)
+    plt.title("length", fontsize=fontsize + 4)
 
     target_length_plot_save_path = os.path.join(base_path, "target_length_plot.png")
     plt.savefig(target_length_plot_save_path, bbox_inches="tight", pad_inches=0.1)

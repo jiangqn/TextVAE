@@ -99,7 +99,7 @@ text_vae:
   encoder_decoder_tying: True
   training:
     batch_size: 64
-    beta: 0.8
+    beta: 1
     anneal:
       type: "linear"
       step: 10000

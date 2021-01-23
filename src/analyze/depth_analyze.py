@@ -18,6 +18,8 @@ def depth_analyze(config: dict) -> None:
         latent_size=latent_size
     )
 
+    fontsize = 18
+
     analyzer.fit()
     analyzer_path = os.path.join(base_path, "depth_analyzer.pkl")
     with open(analyzer_path, "wb") as f:
@@ -35,8 +37,11 @@ def depth_analyze(config: dict) -> None:
     plt.figure(figsize=(10, 7))
 
     plt.scatter(projected_latent_variable[:, 0], projected_latent_variable[:, 1], c=target, s=0.1, cmap="viridis")
-    plt.colorbar()
-    plt.title("latent space")
+    colorbar = plt.colorbar()
+    colorbar.ax.tick_params(labelsize=fontsize)
+    plt.xticks(fontsize=fontsize)
+    plt.yticks(fontsize=fontsize)
+    plt.title("depth", fontsize=fontsize + 4)
 
     depth_visualization_save_path = os.path.join(base_path, "depth_visualization.png")
     plt.savefig(depth_visualization_save_path, bbox_inches="tight", pad_inches=0.1)
@@ -50,8 +55,9 @@ def depth_analyze(config: dict) -> None:
     plt.scatter(target, projection, c=target, s=0.1)
     plt.plot(xtarget, analyzer.latent_projection_dict[min_value:].cpu().numpy())
 
-    plt.xlabel("depth")
-    plt.ylabel("projection")
+    plt.xlabel("depth", fontsize=fontsize)
+    plt.ylabel("projection", fontsize=fontsize)
+    plt.title("depth", fontsize=fontsize + 4)
 
     target_depth_plot_save_path = os.path.join(base_path, "target_depth_plot.png")
     plt.savefig(target_depth_plot_save_path, bbox_inches="tight", pad_inches=0.1)
