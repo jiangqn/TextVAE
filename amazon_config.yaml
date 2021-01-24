@@ -118,6 +118,7 @@ sample:
   categorical_sample:
     sample_num: 100000
     save_encoding: False
+    confidence: 0.85
   length_sample:
     sample_num: 100000
     save_encoding: False

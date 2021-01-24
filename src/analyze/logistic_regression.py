@@ -17,6 +17,15 @@ class LogisticRegression(nn.Module):
         logit = self.linear(latent_variable)
         return logit
 
+    def get_prediction(self, latent_variable: torch.Tensor) -> torch.Tensor:
+        """
+        :param latent_variable: torch.FloatTensor (batch_size, latent_size)
+        :return prediction: torch.LongTensor (batch_size,)
+        """
+        logit = self.linear(latent_variable)
+        prediction = logit.argmax(dim=-1)
+        return prediction
+
     def get_probability(self, latent_variable: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         """
         :param latent_variable: torch.FloatTensor (batch_size, latent_size)

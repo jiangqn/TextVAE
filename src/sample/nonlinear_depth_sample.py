@@ -68,7 +68,7 @@ def nonlinear_depth_sample(config: dict) -> None:
 
     print('depth sample')
     print('accuracy: %.4f' % metric.accuracy(depth, target_depth))
-    print('diff: %.4f' % metric.diff(depth, target_depth))
+    print('diff: %.4f' % metric.MAE(depth, target_depth))
     print('correlation: %.4f' % metric.correlation(depth, target_depth))
     print('ppl: %.4f' % metric.mean(ppl))
 

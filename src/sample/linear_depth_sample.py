@@ -56,10 +56,7 @@ def linear_depth_sample(config: dict) -> None:
 
     print("depth sample")
     print("accuracy: %.4f" % metric.accuracy(depth, target_depth))
-    print("diff: %.4f" % metric.diff(depth, target_depth))
-    print("correlation: %.4f" % metric.correlation(depth, target_depth))
+    print("MAE: %.4f" % metric.MAE(depth, target_depth))
     print("ppl: %.4f" % metric.mean(ppl))
-
     reverse_ppl = eval_reverse_ppl(config, sample_save_path)
-
-    print("depth sample reverse ppl: %.4f" % reverse_ppl)
+    print("reverse ppl: %.4f" % reverse_ppl)

@@ -166,3 +166,67 @@ class CategoricalAttributeAnalyzer(object):
             output.append(probability)
 
         return output
+
+    def rejection_sample(self, text_vae: nn.Module, target: torch.Tensor) -> torch.Tensor:
+        """
+        :param target: torch.LongTensor (num,)
+        :return latent_variable: torch.FloatTensor (num, latent_size)
+        """
+        num_categories = target.max().item() + 1
+        count = torch.zeros(num_categories, device=target.device, dtype=torch.long)
+        current = torch.zeros(num_categories, device=target.device, dtype=torch.long)
+        for i in range(num_categories):
+            count[i] = (target == i).long().sum().item()
+        batch_size = 64
+        latent_variable_buffer = [[] for _ in range(num_categories)]
+        while not torch.all(current >= count).item():
+            latent_variable = text_vae.sample_latent_variable(batch_size)
+            prediction = self.model.get_prediction(latent_variable)
+            for i in range(num_categories):
+                latent_variable_buffer[i].append(latent_variable[prediction == i])
+                current[i] += (prediction == i).long().sum()
+        for i in range(num_categories):
+            latent_variable_buffer[i] = torch.cat(latent_variable_buffer[i], dim=0)
+            latent_variable_buffer[i] = latent_variable_buffer[i][0:count[i]]
+        latent_variable = torch.cat(latent_variable_buffer, dim=0)
+        assert latent_variable.size(0) == target.size(0)
+        sort_index = target.argsort()
+        reorder_index = sort_index.argsort()
+        latent_variable = latent_variable[reorder_index]
+        return latent_variable
+
+    def rejection_sample_with_confidence(self, text_vae: nn.Module, target: torch.Tensor, confidence_threshold: float) -> torch.Tensor:
+        """
+        :param target: torch.LongTensor (num,)
+        :param confidence: float
+        :return latent_variable: torch.FloatTensor (num, latent_size)
+        """
+        """
+        :param target: torch.LongTensor (num,)
+        :return latent_variable: torch.FloatTensor (num, latent_size)
+        """
+        num_categories = target.max().item() + 1
+        count = torch.zeros(num_categories, device=target.device, dtype=torch.long)
+        current = torch.zeros(num_categories, device=target.device, dtype=torch.long)
+        for i in range(num_categories):
+            count[i] = (target == i).long().sum().item()
+        batch_size = 64
+        latent_variable_buffer = [[] for _ in range(num_categories)]
+        while not torch.all(current >= count).item():
+            latent_variable = text_vae.sample_latent_variable(batch_size)
+            prediction = self.model.get_prediction(latent_variable)
+            confidence = self.model.get_probability(latent_variable, prediction)
+            latent_variable = latent_variable[confidence >= confidence_threshold]
+            prediction = prediction[confidence >= confidence_threshold]
+            for i in range(num_categories):
+                latent_variable_buffer[i].append(latent_variable[prediction == i])
+                current[i] += (prediction == i).long().sum()
+        for i in range(num_categories):
+            latent_variable_buffer[i] = torch.cat(latent_variable_buffer[i], dim=0)
+            latent_variable_buffer[i] = latent_variable_buffer[i][0:count[i]]
+        latent_variable = torch.cat(latent_variable_buffer, dim=0)
+        assert latent_variable.size(0) == target.size(0)
+        sort_index = target.argsort()
+        reorder_index = sort_index.argsort()
+        latent_variable = latent_variable[reorder_index]
+        return latent_variable

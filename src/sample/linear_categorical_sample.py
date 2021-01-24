@@ -2,71 +2,72 @@ import os
 import torch
 import numpy as np
 import pickle
-import joblib
 import csv
-from src.utils.multinomial_distribution import get_multinomial_distribution_from_tsv
-from src.utils.rejection_sample import multinomial_rejection_sample
-from src.sample.sample_from_encoding import sample_sentences_from_latent_variable
+import time
+from src.sample.sample_by_latent_variable import sample_by_latent_variable
 from src.get_features.get_category import get_categorical_features_from_tsv
 from src.get_features.get_ppl import get_ppl_from_tsv
 from src.utils import metric
 from src.train.eval_reverse_ppl import eval_reverse_ppl
+from src.utils.tsv_reader import read_field
+from src.utils.multinomial_distribution import get_multinomial_distribution, sample_from_multinomial_distribution
 
 def linear_categorical_sample(config: dict) -> None:
 
-    base_path = config['base_path']
-    vanilla_sample_num = config['vanilla_sample']['sample_num']
-    vanilla_sample_save_path = os.path.join(base_path, 'vanilla_sample_%d.tsv' % vanilla_sample_num)
-    categorical_sample_num = config['categorical_sample']['sample_num']
-    categorical_sample_save_path = os.path.join(base_path, 'categorical_sample_%d.tsv' % categorical_sample_num)
-    save_encoding = config['categorical_sample']['save_encoding']
+    os.environ["CUDA_VISIBLE_DEVICES"] = str(config["gpu"])
 
-    num_layers = config['vae']['num_layers']
-    hidden_size = config['vae']['hidden_size']
+    base_path = config["base_path"]
 
-    os.environ['CUDA_VISIBLE_DEVICES'] = str(config['gpu'])
+    vanilla_sample_save_path = os.path.join(base_path, "vanilla_sample_test.tsv")
+    vanilla_sample_category = read_field(vanilla_sample_save_path, "label")
+    category_distribution = get_multinomial_distribution(vanilla_sample_category)
 
-    classifier_path = os.path.join(base_path, 'classifier.pkl')
-    model_path = os.path.join(base_path, 'vae.pkl')
-    vocab_path = os.path.join(base_path, 'vocab.pkl')
-    text_cnn_path = os.path.join(base_path, 'text_cnn.pkl')
-    language_model_path = os.path.join(base_path, 'language_model.pkl')
+    sample_num = config["sample"]["categorical_sample"]["sample_num"]
+    sample_save_path = os.path.join(base_path, "categorical_sample.tsv")
+    target_category = sample_from_multinomial_distribution(category_distribution, sample_num)
 
-    with open(vocab_path, 'rb') as handle:
+    vocab_path = os.path.join(base_path, "vocab.pkl")
+    with open(vocab_path, "rb") as handle:
         vocab = pickle.load(handle)
 
+    model_path = os.path.join(base_path, "text_vae.pkl")
+    language_model_path = os.path.join(base_path, "language_model.pkl")
+    text_cnn_path = os.path.join(base_path, "text_cnn.pkl")
+    analyzer_path = os.path.join(base_path, "category_analyzer.pkl")
+
     model = torch.load(model_path)
-
-    classifier = joblib.load(classifier_path)
-
-    label_distribution = get_multinomial_distribution_from_tsv(vanilla_sample_save_path, 'label')
-    target_label, encoding = multinomial_rejection_sample(num_layers, categorical_sample_num, hidden_size, classifier, label_distribution)
-
     device = model.encoder.embedding.weight.device
-    encoding = encoding.to(device)
+    with open(analyzer_path, "rb") as f:
+        analyzer = pickle.load(f)
 
-    sentences = ['sentence'] + sample_sentences_from_latent_variable(model, vocab, encoding, config['max_len'], config['vae']['batch_size'])
+    start = time.time()
+    confidence = config["sample"]["categorical_sample"].get("confidence", None)
+    if confidence == None:
+        latent_variable = analyzer.rejection_sample(text_vae=model, target=torch.tensor(target_category).to(device))
+    else:
+        latent_variable = analyzer.rejection_sample_with_confidence(text_vae=model, target=torch.tensor(target_category).to(device), confidence_threshold=confidence)
+    end = time.time()
+    print("latent variable sample time: %.4f s" % (end - start))
 
+    start = time.time()
+    sentences = sample_by_latent_variable(model, vocab, latent_variable, config["max_len"],
+                                          config["text_vae"]["training"]["batch_size"])
+    end = time.time()
+    print("sentence generation time: %.4f s" % (end - start))
+
+    sentences = ["sentence"] + sentences
     sentences = [[sentence] for sentence in sentences]
-    if save_encoding:
-        encoding = encoding.transpose(0, 1).reshape(categorical_sample_num, -1).cpu().numpy()
-        encoding_save_path = '.'.join(categorical_sample_save_path.split('.')[0:-1]) + '.npy'
-        np.save(encoding_save_path, encoding)
 
-    with open(categorical_sample_save_path, 'w') as f:
-        writer = csv.writer(f, delimiter='\t')
+    with open(sample_save_path, "w") as f:
+        writer = csv.writer(f, delimiter="\t")
         writer.writerows(sentences)
 
-    label = get_categorical_features_from_tsv(file_path=categorical_sample_save_path, batch_size=config['text_cnn']['batch_size'],
-                                              model_path=text_cnn_path, vocab_path=vocab_path, output_category=True)
-
-    print('categorical sample accuracy: %.4f' % metric.accuracy(label, target_label.tolist()))
-
-    ppl = get_ppl_from_tsv(file_path=categorical_sample_save_path, batch_size=config['language_model']['batch_size'],
+    category = get_categorical_features_from_tsv(sample_save_path, config["text_cnn"]["training"]["batch_size"], vocab=vocab, model_path=text_cnn_path, output_category=True)
+    ppl = get_ppl_from_tsv(sample_save_path, config["language_model"]["training"]["batch_size"],
                            model_path=language_model_path, vocab_path=vocab_path)
 
-    print('categorical sample ppl: %.4f' % metric.mean(ppl))
-
-    reverse_ppl = eval_reverse_ppl(config, categorical_sample_save_path)
-
-    print('categorical sample reverse ppl: %.4f' % reverse_ppl)
+    print("categorical sample")
+    print("accuracy: %.4f" % metric.accuracy(category, target_category))
+    print("ppl: %.4f" % metric.mean(ppl))
+    reverse_ppl = eval_reverse_ppl(config, sample_save_path)
+    print("reverse ppl: %.4f" % reverse_ppl)

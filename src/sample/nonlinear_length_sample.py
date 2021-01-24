@@ -74,7 +74,7 @@ def nonlinear_length_sample(config: dict) -> None:
 
     print("length sample")
     print("accuracy: %.4f" % metric.accuracy(length, target_length))
-    print("diff: %.4f" % metric.diff(length, target_length))
+    print("diff: %.4f" % metric.MAE(length, target_length))
     print("correlation: %.4f" % metric.correlation(length, target_length))
     print("ppl: %.4f" % metric.mean(ppl))
 

@@ -56,10 +56,7 @@ def linear_length_sample(config: dict) -> None:
 
     print("length sample")
     print("accuracy: %.4f" % metric.accuracy(length, target_length))
-    print("diff: %.4f" % metric.diff(length, target_length))
-    print("correlation: %.4f" % metric.correlation(length, target_length))
+    print("MAE: %.4f" % metric.MAE(length, target_length))
     print("ppl: %.4f" % metric.mean(ppl))
-
     reverse_ppl = eval_reverse_ppl(config, sample_save_path)
-
-    print("length sample reverse ppl: %.4f" % reverse_ppl)
+    print("reverse ppl: %.4f" % reverse_ppl)

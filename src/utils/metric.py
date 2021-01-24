@@ -12,7 +12,7 @@ def accuracy(X: List[int], Y: List[int]) -> float:
 def rmse(X: list, Y: list) -> float:
     return math.sqrt(mean([(x - y) ** 2 for x, y in zip(X, Y)]))
 
-def diff(X: list, Y: list) -> float:
+def MAE(X: list, Y: list) -> float:
     return mean([abs(x - y) for x, y in zip(X, Y)])
 
 def correlation(X: list, Y: list) -> float:
