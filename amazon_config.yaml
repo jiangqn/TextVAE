@@ -111,6 +111,7 @@ text_vae:
     clip_grad_norm: 5.0
     anneal_step: 3000
 sample:
+  aggregated_posterior_ratio: 0.1
   vanilla_sample:
     train_sample_num: 100000
     dev_sample_num: 20000
