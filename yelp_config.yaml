@@ -1,4 +1,4 @@
-seed: 42
+seed: 84
 base_path: data/yelp
 glove_source_path: /home/jiangqn/datasets/embeddings/glove.840B.300d.txt
 max_len: 50
@@ -126,7 +126,7 @@ text_vae:
     eval_freq: 100
     clip_grad_norm: 5.0
 sample:
-  aggregated_posterior_ratio: 0.1
+  aggregated_posterior_ratio: 0
   vanilla_sample:
     train_sample_num: 100000
     dev_sample_num: 20000
