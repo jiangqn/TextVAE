@@ -1,7 +1,7 @@
 import os
 
 dataset = "yelp"
-gpu = 3
+gpu = 1
 os.system("export CUDA_VISIBLE_DEVICES=%d" % gpu)
 
 print("train text_cnn")

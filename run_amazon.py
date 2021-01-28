@@ -1,7 +1,7 @@
 import os
 
 dataset = "amazon"
-gpu = 0
+gpu = 4
 os.system("export CUDA_VISIBLE_DEVICES=%d" % gpu)
 
 print("train text_cnn")
