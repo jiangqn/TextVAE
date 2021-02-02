@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 from hyperanalysis.visualization.lda import linear_discriminant_analysis
 import pickle
+from src.utils.first_upper import first_upper
 
 def category_analyze(config: dict) -> None:
 
@@ -30,8 +31,8 @@ def category_analyze(config: dict) -> None:
         "topic": plt.cm.Dark2
     }
 
-    fontsize = 18
-    threshold = 0.70
+    fontsize = 26
+    threshold = 0.7
 
     analyzer = CategoricalAttributeAnalyzer(
         base_path=base_path,
@@ -73,7 +74,7 @@ def category_analyze(config: dict) -> None:
     plt.xticks(fontsize=fontsize)
     plt.yticks(fontsize=fontsize)
     plt.legend(custom_lines, category_sets[attribute], fontsize=fontsize)
-    plt.title(attribute, fontsize=fontsize + 4)
+    plt.title(first_upper(attribute), fontsize=fontsize + 4)
 
     plt.savefig(category_visualization_save_path, bbox_inches="tight", pad_inches=0.1)
     plt.clf()
@@ -84,6 +85,6 @@ def category_analyze(config: dict) -> None:
     plt.xticks(fontsize=fontsize)
     plt.yticks(fontsize=fontsize)
     plt.legend(custom_lines, category_sets[attribute], fontsize=fontsize)
-    plt.title("%s (confidence = %.2f)" % (attribute, threshold), fontsize=fontsize + 4)
+    plt.title("%s (confidence $\geq$ %.2f)" % (first_upper(attribute), threshold), fontsize=fontsize + 4)
 
     plt.savefig(confident_category_visualization_save_path, bbox_inches="tight", pad_inches=0.1)

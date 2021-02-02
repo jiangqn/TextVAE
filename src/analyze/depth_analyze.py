@@ -18,7 +18,7 @@ def depth_analyze(config: dict) -> None:
         latent_size=latent_size
     )
 
-    fontsize = 18
+    fontsize = 26
 
     analyzer.fit()
     analyzer_path = os.path.join(base_path, "depth_analyzer.pkl")
@@ -36,12 +36,14 @@ def depth_analyze(config: dict) -> None:
 
     plt.figure(figsize=(10, 7))
 
+
     plt.scatter(projected_latent_variable[:, 0], projected_latent_variable[:, 1], c=target, s=0.1, cmap="viridis")
+    plt.xlabel("main direction", fontdict={"size": fontsize})
     colorbar = plt.colorbar()
     colorbar.ax.tick_params(labelsize=fontsize)
     plt.xticks(fontsize=fontsize)
     plt.yticks(fontsize=fontsize)
-    plt.title("depth", fontsize=fontsize + 4)
+    plt.title("Depth", fontsize=fontsize + 4)
 
     depth_visualization_save_path = os.path.join(base_path, "depth_visualization.png")
     plt.savefig(depth_visualization_save_path, bbox_inches="tight", pad_inches=0.1)
@@ -57,7 +59,7 @@ def depth_analyze(config: dict) -> None:
 
     plt.xlabel("depth", fontsize=fontsize)
     plt.ylabel("projection", fontsize=fontsize)
-    plt.title("depth", fontsize=fontsize + 4)
+    plt.title("Depth", fontsize=fontsize + 4)
 
     target_depth_plot_save_path = os.path.join(base_path, "target_depth_plot.png")
     plt.savefig(target_depth_plot_save_path, bbox_inches="tight", pad_inches=0.1)

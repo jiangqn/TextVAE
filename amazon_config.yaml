@@ -1,4 +1,4 @@
-seed: 126
+seed: 42
 base_path: data/amazon
 glove_source_path: /home/jiangqn/datasets/embeddings/glove.840B.300d.txt
 max_len: 50
@@ -19,7 +19,7 @@ text_cnn:
 language_model:
   model:
     embed_size: 300
-    hidden_size: 300
+    hidden_size: 600
     num_layers: 1
     dropout: 0.5
     weight_tying: True
@@ -99,7 +99,7 @@ text_vae:
   encoder_decoder_tying: True
   training:
     batch_size: 64
-    beta: 1
+    beta: 0.8
     anneal:
       type: "linear"
       step: 10000
@@ -111,7 +111,7 @@ text_vae:
     clip_grad_norm: 5.0
     anneal_step: 3000
 sample:
-  aggregated_posterior_ratio: 0.2
+  aggregated_posterior_ratio: 0
   vanilla_sample:
     train_sample_num: 100000
     dev_sample_num: 20000
@@ -119,7 +119,6 @@ sample:
   categorical_sample:
     sample_num: 100000
     save_encoding: False
-    confidence: 0.85
   length_sample:
     sample_num: 100000
     save_encoding: False

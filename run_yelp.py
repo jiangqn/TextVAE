@@ -4,22 +4,22 @@ dataset = "yelp"
 gpu = 1
 os.system("export CUDA_VISIBLE_DEVICES=%d" % gpu)
 
-print("train text_cnn")
-os.system("python main.py --model text_cnn --task train --gpu %d --config %s_config.yaml" % (gpu, dataset))
-print("test text_cnn")
-os.system("python main.py --model text_cnn --task test --gpu %d --config %s_config.yaml" % (gpu, dataset))
-print("train lm")
-os.system("python main.py --model lm --task train --gpu %d --config %s_config.yaml" % (gpu, dataset))
-print("test lm")
-os.system("python main.py --model lm --task test --gpu %d --config %s_config.yaml" % (gpu, dataset))
-print("train text_vae")
-os.system("python main.py --model text_vae --task train --gpu %d --config %s_config.yaml" % (gpu, dataset))
-print("test text_vae")
-os.system("python main.py --model text_vae --task test --gpu %d --config %s_config.yaml" % (gpu, dataset))
-print("compute aggregated posterior")
-os.system("python main.py --model text_vae --task compute_aggregated_posterior --gpu %d --config %s_config.yaml" % (gpu, dataset))
+# print("train text_cnn")
+# os.system("python main.py --model text_cnn --task train --gpu %d --config %s_config.yaml" % (gpu, dataset))
+# print("test text_cnn")
+# os.system("python main.py --model text_cnn --task test --gpu %d --config %s_config.yaml" % (gpu, dataset))
+# print("train lm")
+# os.system("python main.py --model lm --task train --gpu %d --config %s_config.yaml" % (gpu, dataset))
+# print("test lm")
+# os.system("python main.py --model lm --task test --gpu %d --config %s_config.yaml" % (gpu, dataset))
+# print("train text_vae")
+# os.system("python main.py --model text_vae --task train --gpu %d --config %s_config.yaml" % (gpu, dataset))
+# print("test text_vae")
+# os.system("python main.py --model text_vae --task test --gpu %d --config %s_config.yaml" % (gpu, dataset))
+# print("compute aggregated posterior")
+# os.system("python main.py --model text_vae --task compute_aggregated_posterior --gpu %d --config %s_config.yaml" % (gpu, dataset))
 
-for i in range(11):
+for i in range(1, 11):
     aggregated_posterior_ratio = i / 10
     print("aggregated_posterior_ratio: %.1f" % aggregated_posterior_ratio)
     print("register_aggregated_posterior")
